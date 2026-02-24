@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Data (large files, not for git)
+data/raw/
+data/artifacts/
+*.db
+*.npy
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Srclight index
+.codelight/
+.srclight/
+
+# Environment
+.env
