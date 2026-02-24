@@ -50,6 +50,12 @@ CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
     tokenize='trigram'
 );
 
+-- fts5vocab: exposes the trigram index vocabulary for short-term expansion.
+-- For 2-char Chinese words (e.g. 选任), we find all trigrams containing the
+-- term and build an OR query, giving proper BM25 ranking without LIKE scans.
+CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts_vocab
+    USING fts5vocab(chunks_fts, row);
+
 -- Keep FTS5 in sync with chunks table
 CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
     INSERT INTO chunks_fts(rowid, text) VALUES (new.id, new.text);

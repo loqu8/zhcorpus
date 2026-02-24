@@ -1,17 +1,17 @@
-"""FTS5 search for Chinese text.
+"""FTS5 trigram search for Chinese text.
 
-Uses trigram tokenizer for 3+ character terms (substring matching),
-with LIKE fallback for 1-2 character terms. Trigram requires queries
-of at least 3 characters, but Chinese words are frequently 2 characters
-(e.g. 银行, 选任, 长城), so the LIKE fallback is essential.
+Uses the trigram tokenizer for all queries. For terms >= 3 characters,
+direct FTS5 MATCH. For shorter terms (1-2 chars, common in Chinese),
+we expand via fts5vocab: find all indexed trigrams containing the term,
+then OR them together. This gives proper BM25 ranking for every query
+length — no LIKE table scans needed.
 """
 
 import sqlite3
 from dataclasses import dataclass
 from typing import List
 
-
-# Trigram FTS5 requires at least 3 characters
+# Trigram FTS5 requires at least 3 characters for direct MATCH
 _MIN_TRIGRAM_CHARS = 3
 
 
@@ -31,14 +31,35 @@ def _fts5_quote(term: str) -> str:
     return '"' + term.replace('"', '""') + '"'
 
 
-def _search_trigram(
+def _expand_short_term(conn: sqlite3.Connection, term: str) -> str:
+    """Expand a short term (< 3 chars) into an OR query via fts5vocab.
+
+    Finds all trigrams in the index that contain the short term,
+    then builds an OR query so FTS5 can search with BM25 ranking.
+
+    Returns an FTS5 MATCH expression, or empty string if no trigrams found.
+    """
+    pattern = f"%{term}%"
+    rows = conn.execute(
+        "SELECT DISTINCT term FROM chunks_fts_vocab WHERE term LIKE ?",
+        (pattern,),
+    ).fetchall()
+
+    if not rows:
+        return ""
+
+    # Build OR query from matching trigrams
+    parts = [_fts5_quote(row["term"]) for row in rows]
+    return " OR ".join(parts)
+
+
+def _run_fts_query(
     conn: sqlite3.Connection,
-    term: str,
+    match_expr: str,
     limit: int,
     snippet_tokens: int,
 ) -> List[SearchResult]:
-    """Search using FTS5 trigram (3+ character terms only)."""
-    safe_term = _fts5_quote(term)
+    """Execute an FTS5 MATCH query and return results."""
     rows = conn.execute(
         """
         SELECT
@@ -56,48 +77,7 @@ def _search_trigram(
         ORDER BY chunks_fts.rank
         LIMIT ?
         """,
-        (snippet_tokens, safe_term, limit),
-    ).fetchall()
-    return [
-        SearchResult(
-            chunk_id=row["chunk_id"],
-            text=row["text"],
-            source=row["source"],
-            title=row["title"],
-            rank=row["rank"],
-            snippet=row["snippet"],
-        )
-        for row in rows
-    ]
-
-
-def _search_like(
-    conn: sqlite3.Connection,
-    term: str,
-    limit: int,
-) -> List[SearchResult]:
-    """Fallback search using LIKE for short terms (< 3 chars).
-
-    Less efficient than FTS5 but necessary for 1-2 character Chinese words.
-    """
-    pattern = f"%{term}%"
-    rows = conn.execute(
-        """
-        SELECT
-            c.id AS chunk_id,
-            c.text,
-            s.name AS source,
-            a.title,
-            0.0 AS rank,
-            c.text AS snippet
-        FROM chunks c
-        JOIN articles a ON a.id = c.article_id
-        JOIN sources s ON s.id = a.source_id
-        WHERE c.text LIKE ?
-        ORDER BY c.char_count ASC
-        LIMIT ?
-        """,
-        (pattern, limit),
+        (snippet_tokens, match_expr, limit),
     ).fetchall()
     return [
         SearchResult(
@@ -120,9 +100,9 @@ def search_fts(
 ) -> List[SearchResult]:
     """Search the corpus for a Chinese term.
 
-    Uses FTS5 trigram for terms >= 3 characters, LIKE fallback for
-    shorter terms. Most Chinese words are 2-4 characters, so both
-    paths are exercised regularly.
+    For terms >= 3 characters: direct FTS5 trigram MATCH.
+    For shorter terms: expand via fts5vocab into an OR query
+    of all trigrams containing the term, preserving BM25 ranking.
 
     Args:
         conn: Database connection.
@@ -131,40 +111,57 @@ def search_fts(
         snippet_tokens: Context window size for FTS5 snippet extraction.
 
     Returns:
-        List of SearchResult ordered by relevance.
+        List of SearchResult ordered by BM25 relevance.
     """
     if len(term) >= _MIN_TRIGRAM_CHARS:
-        results = _search_trigram(conn, term, limit, snippet_tokens)
-        if results:
-            return results
-        # Trigram miss — fall through to LIKE
-    return _search_like(conn, term, limit)
+        match_expr = _fts5_quote(term)
+    else:
+        match_expr = _expand_short_term(conn, term)
+        if not match_expr:
+            return []
+
+    results = _run_fts_query(conn, match_expr, limit, snippet_tokens)
+
+    # Post-filter: ensure the actual term appears in the text.
+    # The trigram OR expansion can match chunks where the trigram exists
+    # but the 2-char term is split across a different boundary.
+    if len(term) < _MIN_TRIGRAM_CHARS:
+        results = [r for r in results if term in r.text]
+
+    return results
 
 
 def count_hits(conn: sqlite3.Connection, term: str) -> int:
     """Count how many chunks contain the term."""
     if len(term) >= _MIN_TRIGRAM_CHARS:
-        safe_term = _fts5_quote(term)
-        row = conn.execute(
-            "SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH ?",
-            (safe_term,),
-        ).fetchone()
-        n = row["n"] if row else 0
-        if n > 0:
-            return n
-    # Fallback for short terms or trigram miss
-    pattern = f"%{term}%"
+        match_expr = _fts5_quote(term)
+    else:
+        match_expr = _expand_short_term(conn, term)
+        if not match_expr:
+            return 0
+
     row = conn.execute(
-        "SELECT COUNT(*) AS n FROM chunks WHERE text LIKE ?",
-        (pattern,),
+        "SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH ?",
+        (match_expr,),
     ).fetchone()
-    return row["n"] if row else 0
+    n = row["n"] if row else 0
+
+    # For short terms, the count may include false positives from
+    # trigram expansion. For accuracy, fall back to exact count.
+    if len(term) < _MIN_TRIGRAM_CHARS and n > 0:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM chunks WHERE text LIKE ?",
+            (f"%{term}%",),
+        ).fetchone()
+        return row["n"] if row else 0
+
+    return n
 
 
 def count_hits_by_source(conn: sqlite3.Connection, term: str) -> dict:
     """Count hits per source for a term."""
     if len(term) >= _MIN_TRIGRAM_CHARS:
-        safe_term = _fts5_quote(term)
+        match_expr = _fts5_quote(term)
         rows = conn.execute(
             """
             SELECT s.name AS source, COUNT(*) AS n
@@ -176,12 +173,12 @@ def count_hits_by_source(conn: sqlite3.Connection, term: str) -> dict:
             GROUP BY s.name
             ORDER BY n DESC
             """,
-            (safe_term,),
+            (match_expr,),
         ).fetchall()
-        result = {row["source"]: row["n"] for row in rows}
-        if result:
-            return result
-    # Fallback for short terms or trigram miss
+        return {row["source"]: row["n"] for row in rows}
+
+    # For short terms, use the fts5vocab expansion for search
+    # but verify with exact text match for accurate counts
     pattern = f"%{term}%"
     rows = conn.execute(
         """

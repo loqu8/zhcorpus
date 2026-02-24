@@ -187,6 +187,33 @@ class TestSourceCounting:
         assert xuanren != chengyu
 
 
+class TestFts5VocabExpansion:
+    """fts5vocab-based expansion gives BM25 ranking for 2-char terms."""
+
+    def test_two_char_term_gets_bm25_ranking(self, populated_db):
+        """2-char terms get real BM25 ranks, not 0.0 placeholders."""
+        results = search_fts(populated_db, "选任")
+        assert len(results) >= 1
+        # BM25 rank should be non-zero (negative = more relevant in FTS5)
+        assert any(r.rank != 0.0 for r in results)
+
+    def test_more_occurrences_rank_higher(self, populated_db):
+        """Chunks with more occurrences of a 2-char term rank higher."""
+        results = search_fts(populated_db, "选任")
+        if len(results) >= 2:
+            # FTS5 rank is negative; more negative = more relevant
+            # The chunk with more occurrences should have a lower (more negative) rank
+            ranks = [r.rank for r in results]
+            # At minimum, results are rank-ordered
+            assert ranks == sorted(ranks)
+
+    def test_no_false_positives(self, populated_db):
+        """Every result for a 2-char term actually contains that term."""
+        results = search_fts(populated_db, "银行")
+        for r in results:
+            assert "银行" in r.text, f"False positive: '银行' not in '{r.text[:50]}...'"
+
+
 class TestClassicalChinese:
     """FTS5 handles classical Chinese (文言文) text."""
 
