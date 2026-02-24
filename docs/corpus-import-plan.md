@@ -146,4 +146,5 @@ All fits within 785 GB available. Even with both news corpora, under 7% of disk.
 | ChID | ~2025-12 | Via cedict-backfill import, 1.12M passages |
 | news2016zh | — | Pending download |
 | THUCNews | — | Pending download |
-| Classical texts | — | Pending download |
+| NiuTrans/Classical-Modern | 2026-02-24 | git clone, 327 books + 97 bilingual, 1.3 GB repo, MIT |
+| chinese-poetry | 2026-02-24 | git clone, 55K Tang + 260K Song poems + classics, 597 MB repo, MIT |
