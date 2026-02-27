@@ -58,7 +58,7 @@ _corpus_conn: Optional[sqlite3.Connection] = None
 _dict_conn: Optional[sqlite3.Connection] = None
 _server_start_time: Optional[float] = None
 
-_VERSION = "0.2.0"
+_VERSION = "0.3.0"
 
 
 def _default_corpus_path() -> Path:
