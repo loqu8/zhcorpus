@@ -205,24 +205,26 @@ class TestSourceCounting:
 
 
 class TestPhraseSearchRanking:
-    """Phrase queries give proper BM25 ranking for all term lengths."""
+    """Two-phase query returns correct results without BM25 ranking.
 
-    def test_two_char_term_gets_bm25_ranking(self, populated_db):
-        """2-char terms get real BM25 ranks, not 0.0 placeholders."""
+    We skip BM25 intentionally — O(n) ranking on 112M+ chunks causes
+    timeouts for common terms (的, 学). Results come in posting-list
+    order (clustered by insertion time / source) instead.
+    """
+
+    def test_two_char_term_returns_results(self, populated_db):
+        """2-char terms return results (rank is 0.0 — BM25 skipped for perf)."""
         results = search_fts(populated_db, "选任")
         assert len(results) >= 1
-        # BM25 rank should be non-zero (negative = more relevant in FTS5)
-        assert any(r.rank != 0.0 for r in results)
+        # Rank is 0.0 because we skip BM25 for O(1) performance
+        assert all(r.rank == 0.0 for r in results)
 
-    def test_more_occurrences_rank_higher(self, populated_db):
-        """Chunks with more occurrences of a 2-char term rank higher."""
+    def test_returns_multiple_results(self, populated_db):
+        """Multiple matching chunks are returned."""
         results = search_fts(populated_db, "选任")
         if len(results) >= 2:
-            # FTS5 rank is negative; more negative = more relevant
-            # The chunk with more occurrences should have a lower (more negative) rank
-            ranks = [r.rank for r in results]
-            # At minimum, results are rank-ordered
-            assert ranks == sorted(ranks)
+            # Results should have valid chunk_ids
+            assert all(r.chunk_id > 0 for r in results)
 
     def test_no_false_positives(self, populated_db):
         """Every result for a 2-char term actually contains that term."""
