@@ -15,6 +15,7 @@ dependencies = [
     "lxml",
     "mwparserfromhell",
     "pypinyin",
+    "click>=8.1.0",
 ]
 
 [project.optional-dependencies]
@@ -25,9 +26,13 @@ dev = [
 gpu = [
     "cupy-cuda12x",
 ]
+web = [
+    "uvicorn>=0.30.0",
+    "starlette>=0.37.0",
+]
 
 [project.scripts]
-zhcorpus = "zhcorpus.mcp.server:main"
+zhcorpus = "zhcorpus.mcp.cli:serve"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
