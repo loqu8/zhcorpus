@@ -1,14 +1,24 @@
-"""Tests proving trigram FTS5 works for Chinese word search.
+"""Tests proving FTS5 'simple' tokenizer works for Chinese word search.
 
-This is the foundational test — if trigram FTS5 can't reliably find
+This is the foundational test — if FTS5 can't reliably find
 Chinese words in the corpus, nothing else matters.
+
+The simple tokenizer (github.com/wangfenjin/simple) handles Chinese
+character-level tokenization natively. Each CJK character becomes a
+separate FTS5 token. simple_query() builds the right MATCH expression.
 """
 
 import sqlite3
 
 import pytest
 
-from zhcorpus.search.fts import count_hits, count_hits_by_source, search_fts
+from zhcorpus.search.fts import (
+    count_hits,
+    count_hits_by_source,
+    get_context,
+    get_full_article,
+    search_fts,
+)
 from tests.fixtures.sample_corpus import (
     COMMON_WORDS,
     DOMAIN_WORDS,
@@ -17,8 +27,8 @@ from tests.fixtures.sample_corpus import (
 )
 
 
-class TestTrigramFindsChinese:
-    """Trigram FTS5 finds Chinese words that unicode61 would miss."""
+class TestFindsChinese:
+    """FTS5 simple tokenizer finds Chinese words of any length."""
 
     def test_finds_common_word(self, populated_db):
         """Basic: finds a common word in the corpus."""
@@ -61,70 +71,77 @@ class TestTrigramFindsChinese:
         assert len(results) >= 1, f"No results for rare word: {word}"
 
 
-class TestTrigramVsUnicode61:
-    """Prove trigram is strictly better than unicode61 for Chinese."""
+class TestSimpleTokenizerDirect:
+    """The simple tokenizer handles Chinese character-level tokenization."""
 
-    def test_unicode61_fails_for_chinese(self, db):
-        """unicode61 tokenizer cannot find Chinese words."""
-        # Create a separate FTS5 table with unicode61
-        db.execute(
-            "CREATE VIRTUAL TABLE test_unicode61_fts USING fts5("
-            "text, tokenize='unicode61')"
-        )
-        db.execute(
-            "INSERT INTO test_unicode61_fts (text) VALUES (?)",
-            ("选任制是指通过选举方式任用干部的制度。",),
-        )
-        db.commit()
-
-        # unicode61 should fail to find the compound word
-        rows = db.execute(
-            'SELECT * FROM test_unicode61_fts WHERE test_unicode61_fts MATCH ?',
-            ('"选任"',),
-        ).fetchall()
-
-        # This may return results (unicode61 treats CJK as single tokens),
-        # but trigram should return MORE results and be more reliable.
-        # The key insight: unicode61 treats the entire CJK block as one token,
-        # so searching for a substring of that block may fail.
-        # We test this by searching for a word that's part of a longer string.
-        rows2 = db.execute(
-            'SELECT * FROM test_unicode61_fts WHERE test_unicode61_fts MATCH ?',
-            ('"选任"',),
-        ).fetchall()
-        # Note: The important thing is that trigram ALWAYS works
-        trigram_results = search_fts(db, "选任")
-        # Trigram may also return 0 here because we only put data in the
-        # unicode61 table, not the chunks table. The real comparison is
-        # in test_both_tokenizers_same_data below.
-
-    def test_both_tokenizers_same_data(self, db):
-        """Same data, trigram finds 3+ char terms that unicode61 misses."""
+    def test_phrase_matches_adjacent_chars(self, db):
+        """simple_query finds exact multi-character sequence."""
         test_text = "选任制是指通过选举方式任用干部的制度。"
-
-        # unicode61
         db.execute(
-            "CREATE VIRTUAL TABLE u61 USING fts5(text, tokenize='unicode61')"
+            "CREATE VIRTUAL TABLE test_st USING fts5(text, tokenize='simple')"
         )
-        db.execute("INSERT INTO u61 (text) VALUES (?)", (test_text,))
-
-        # trigram
-        db.execute(
-            "CREATE VIRTUAL TABLE tri USING fts5(text, tokenize='trigram')"
-        )
-        db.execute("INSERT INTO tri (text) VALUES (?)", (test_text,))
+        db.execute("INSERT INTO test_st VALUES (?)", (test_text,))
         db.commit()
 
-        # Search for a 3-char substring — trigram's sweet spot
-        # unicode61 treats the entire CJK block as one token, so a
-        # substring like "选任制" won't match via FTS5 MATCH
-        tri_hits = db.execute(
-            'SELECT COUNT(*) AS n FROM tri WHERE tri MATCH ?', ('"选任制"',)
-        ).fetchone()["n"]
-        assert tri_hits >= 1, "Trigram must find '选任制'"
+        # 2-char phrase
+        rows = db.execute(
+            'SELECT * FROM test_st WHERE test_st MATCH simple_query(?)',
+            ("选任",),
+        ).fetchall()
+        assert len(rows) >= 1
 
-        # Note: 2-char terms like "选任" require our LIKE fallback
-        # because trigram needs 3+ characters. This is by design.
+        # 3-char phrase
+        rows = db.execute(
+            'SELECT * FROM test_st WHERE test_st MATCH simple_query(?)',
+            ("选任制",),
+        ).fetchall()
+        assert len(rows) >= 1
+
+    def test_non_adjacent_chars_no_match(self, db):
+        """Phrase query does NOT match non-adjacent characters."""
+        test_text = "选举任命是两种方式。"
+        db.execute(
+            "CREATE VIRTUAL TABLE test_st2 USING fts5(text, tokenize='simple')"
+        )
+        db.execute("INSERT INTO test_st2 VALUES (?)", (test_text,))
+        db.commit()
+
+        # "选任" should NOT match — 选 and 任 are not adjacent
+        rows = db.execute(
+            'SELECT * FROM test_st2 WHERE test_st2 MATCH ?',
+            ('"选任"',),
+        ).fetchall()
+        assert len(rows) == 0
+
+    def test_single_char_search(self, db):
+        """Single character search works."""
+        test_text = "中国是一个大国。"
+        db.execute(
+            "CREATE VIRTUAL TABLE test_st3 USING fts5(text, tokenize='simple')"
+        )
+        db.execute("INSERT INTO test_st3 VALUES (?)", (test_text,))
+        db.commit()
+
+        rows = db.execute(
+            'SELECT * FROM test_st3 WHERE test_st3 MATCH simple_query(?)',
+            ("国",),
+        ).fetchall()
+        assert len(rows) >= 1
+
+    def test_highlight_works(self, db):
+        """simple_highlight produces correct output."""
+        db.execute(
+            "CREATE VIRTUAL TABLE test_st4 USING fts5(text, tokenize='simple')"
+        )
+        db.execute("INSERT INTO test_st4 VALUES ('银行是金融机构。')")
+        db.commit()
+
+        rows = db.execute(
+            "SELECT simple_highlight(test_st4, 0, '[', ']') FROM test_st4 "
+            "WHERE test_st4 MATCH simple_query('银行')",
+        ).fetchall()
+        assert len(rows) == 1
+        assert "[银行]" in rows[0][0]
 
 
 class TestPolyphonicWords:
@@ -187,8 +204,8 @@ class TestSourceCounting:
         assert xuanren != chengyu
 
 
-class TestFts5VocabExpansion:
-    """fts5vocab-based expansion gives BM25 ranking for 2-char terms."""
+class TestPhraseSearchRanking:
+    """Phrase queries give proper BM25 ranking for all term lengths."""
 
     def test_two_char_term_gets_bm25_ranking(self, populated_db):
         """2-char terms get real BM25 ranks, not 0.0 placeholders."""
@@ -236,3 +253,62 @@ class TestClassicalChinese:
         """Finds text from the Zhuangzi (庄子)."""
         results = search_fts(populated_db, "北冥有鱼")
         assert len(results) >= 1
+
+
+class TestContextExpansion:
+    """get_context returns neighboring chunks for grep -C style display."""
+
+    def test_context_includes_hit(self, populated_db):
+        """Context always includes the original hit text."""
+        results = search_fts(populated_db, "银行")
+        assert len(results) >= 1
+        ctx = get_context(populated_db, results[0], before=2, after=2)
+        assert results[0].text in ctx.context
+        assert ctx.hit_text == results[0].text
+
+    def test_context_wider_than_hit(self, populated_db):
+        """Context is at least as long as the hit chunk (usually longer)."""
+        results = search_fts(populated_db, "营商环境")
+        assert len(results) >= 1
+        ctx = get_context(populated_db, results[0], before=2, after=2)
+        assert len(ctx.context) >= len(results[0].text)
+
+    def test_context_zero_returns_hit_only(self, populated_db):
+        """With before=0 and after=0, context is just the hit chunk."""
+        results = search_fts(populated_db, "银行")
+        assert len(results) >= 1
+        ctx = get_context(populated_db, results[0], before=0, after=0)
+        assert ctx.context == results[0].text
+        assert ctx.chunk_count == 1
+
+    def test_context_preserves_order(self, populated_db):
+        """Chunks in context are in article order."""
+        results = search_fts(populated_db, "选任")
+        assert len(results) >= 1
+        ctx = get_context(populated_db, results[0], before=3, after=3)
+        # Context should be multiple chunks joined by newlines
+        assert ctx.chunk_count >= 1
+
+    def test_context_metadata(self, populated_db):
+        """Context carries source and title from the result."""
+        results = search_fts(populated_db, "画蛇添足")
+        assert len(results) >= 1
+        ctx = get_context(populated_db, results[0], before=1, after=1)
+        assert ctx.source == results[0].source
+        assert ctx.title == results[0].title
+
+    def test_result_has_article_id(self, populated_db):
+        """SearchResult carries article_id and chunk_index."""
+        results = search_fts(populated_db, "银行")
+        assert len(results) >= 1
+        assert results[0].article_id > 0
+        assert results[0].chunk_index >= 0
+
+    def test_get_full_article(self, populated_db):
+        """get_full_article returns all chunks for an article."""
+        results = search_fts(populated_db, "选任")
+        assert len(results) >= 1
+        full = get_full_article(populated_db, results[0].article_id)
+        assert results[0].text in full
+        # Full article should be longer than a single chunk
+        assert len(full) >= len(results[0].text)

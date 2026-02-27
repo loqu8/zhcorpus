@@ -229,8 +229,8 @@ class TestImportClassics:
         import_classics(zhcorpus_db, niutrans_dir=niutrans)
 
         rows = zhcorpus_db.execute(
-            'SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH ?',
-            ('"学而时习"',),
+            'SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH simple_query(?)',
+            ("学而时习",),
         ).fetchone()
         assert rows["n"] >= 1
 

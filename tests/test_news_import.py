@@ -124,8 +124,8 @@ class TestImportNewsIter:
             self._make_articles(3),
         )
         rows = zhcorpus_db.execute(
-            'SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH ?',
-            ('"新闻报道"',),
+            'SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH simple_query(?)',
+            ("新闻报道",),
         ).fetchone()
         assert rows["n"] >= 1
 

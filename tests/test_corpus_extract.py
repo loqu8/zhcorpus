@@ -160,10 +160,10 @@ class TestImportSource:
         """Imported chunks appear in FTS5 index."""
         import_source(zhcorpus_db, mock_backfill_db, "wikipedia")
 
-        # FTS5 trigram search for a 3+ char term
+        # FTS5 search via simple_query
         rows = zhcorpus_db.execute(
-            'SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH ?',
-            ('"金融机构"',),
+            'SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH simple_query(?)',
+            ("金融机构",),
         ).fetchone()
         assert rows["n"] >= 1
 

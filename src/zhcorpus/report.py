@@ -9,7 +9,12 @@ import sqlite3
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from .search.fts import SearchResult, count_hits_by_source, search_fts
+from .search.fts import (
+    SearchResult,
+    count_hits_by_source,
+    get_context,
+    search_fts,
+)
 
 
 @dataclass
@@ -105,6 +110,7 @@ def build_word_report(
     term: str,
     limit: int = 30,
     snippets_per_source: int = 3,
+    context_chunks: int = 2,
 ) -> WordReport:
     """Build a comprehensive word report from all corpus sources.
 
@@ -113,6 +119,8 @@ def build_word_report(
         term: Chinese word to report on.
         limit: Maximum total search results to consider.
         snippets_per_source: Best snippets to keep per source.
+        context_chunks: Number of neighboring chunks to include
+            before/after each hit (0 = hit chunk only).
 
     Returns:
         WordReport with per-source evidence breakdown.
@@ -124,7 +132,7 @@ def build_word_report(
     source_counts = count_hits_by_source(conn, term)
     total_hits = sum(source_counts.values())
 
-    # Best snippets per source
+    # Best snippets per source — with context if requested
     best_per_source = _pick_best_snippets_per_source(results, snippets_per_source)
 
     # Build source evidence list
@@ -141,11 +149,14 @@ def build_word_report(
     # Cross-reference CEDICT
     cedict_entries = _lookup_cedict(conn, term)
 
-    # Top snippets across all sources (for the AI's quick read)
-    top_snippets = [
-        {"source": r.source, "title": r.title, "text": r.text}
-        for r in results[:6]
-    ]
+    # Top snippets across all sources — expand with context
+    top_snippets = []
+    for r in results[:6]:
+        entry = {"source": r.source, "title": r.title, "text": r.text}
+        if context_chunks > 0:
+            ctx = get_context(conn, r, before=context_chunks, after=context_chunks)
+            entry["context"] = ctx.context
+        top_snippets.append(entry)
 
     return WordReport(
         term=term,
