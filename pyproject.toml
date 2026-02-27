@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "zhcorpus"
-version = "0.1.0"
+version = "0.2.0"
 description = "Chinese corpus MCP search engine — multi-source evidence reports for AI-powered Chinese lexicography"
 readme = "README.md"
 requires-python = ">=3.11"
