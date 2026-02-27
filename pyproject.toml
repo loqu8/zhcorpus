@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "zhcorpus"
-version = "0.1.0"
+version = "0.2.0"
 description = "Chinese corpus MCP search engine — multi-source evidence reports for AI-powered Chinese lexicography"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,6 +15,7 @@ dependencies = [
     "lxml",
     "mwparserfromhell",
     "pypinyin",
+    "click>=8.1.0",
 ]
 
 [project.optional-dependencies]
@@ -25,9 +26,13 @@ dev = [
 gpu = [
     "cupy-cuda12x",
 ]
+web = [
+    "uvicorn>=0.30.0",
+    "starlette>=0.37.0",
+]
 
 [project.scripts]
-zhcorpus = "zhcorpus.mcp.server:main"
+zhcorpus = "zhcorpus.mcp.cli:serve"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

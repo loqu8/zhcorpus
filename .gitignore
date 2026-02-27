@@ -12,6 +12,9 @@ data/artifacts/
 *.db
 *.npy
 
+# Native extensions (downloaded binaries)
+lib/
+
 # IDE
 .idea/
 .vscode/
@@ -24,6 +27,9 @@ Thumbs.db
 # Srclight index
 .codelight/
 .srclight/
+
+# Playwright MCP browser cache
+.playwright-mcp/
 
 # Environment
 .env
