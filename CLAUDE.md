@@ -11,7 +11,7 @@ Chinese corpus MCP search engine — multi-source evidence reports for AI-powere
 
 ## Tech Stack
 
-- Python 3.11+, SQLite (FTS5 trigram + fts5vocab), numpy
+- Python 3.11+, SQLite FTS5 with [simple tokenizer](https://github.com/wangfenjin/simple), numpy
 - MCP SDK (`mcp>=1.0.0`) for AI agent access
 - pytest for testing
 
@@ -62,7 +62,7 @@ zhcorpus/
 │   │   ├── corpus_extract.py # Extract from cedict-backfill DB
 │   │   └── news.py        # THUCNews + news2016zh importers
 │   ├── search/
-│   │   ├── fts.py         # Trigram FTS5 + fts5vocab expansion
+│   │   ├── fts.py         # FTS5 search with simple tokenizer
 │   │   └── hybrid.py      # (Phase 3: embeddings + RRF)
 │   └── mcp/
 │       └── server.py      # (Phase 2) MCP stdio server
@@ -77,7 +77,7 @@ zhcorpus/
 │   ├── test_chunker.py          # 13 tests
 │   ├── test_cedict_parser.py    # 11 tests
 │   ├── test_corpus_extract.py   # 15 tests
-│   ├── test_fts_chinese.py      # 35 tests
+│   ├── test_fts_chinese.py      # 46 tests
 │   ├── test_news_import.py      # 10 tests
 │   └── test_word_report.py      # 20 tests
 └── data/
@@ -87,11 +87,20 @@ zhcorpus/
 
 ## FTS5 Search Architecture
 
-Two-tier approach, no segmenter dependency:
-- **3+ char terms**: Direct FTS5 trigram MATCH with BM25 ranking
-- **1-2 char terms**: fts5vocab expansion — find all indexed trigrams containing the short term, OR them into one MATCH query, post-filter for exact matches
+[simple tokenizer](https://github.com/wangfenjin/simple) — native C FTS5 extension for Chinese:
+- Each CJK character becomes a separate FTS5 token (character-level tokenization in C)
+- Raw Chinese text goes in, no preprocessing needed
+- `simple_query()` builds the right MATCH expression at query time
+- `simple_highlight()` / `simple_snippet()` for proper Chinese highlighting
+- Optional jieba integration for word-level matching via `jieba_query()`
+- Content table with triggers — standard FTS5 sync, `rebuild` command works
+- BM25 ranking for all queries
 
-Key tables: `chunks_fts` (trigram), `chunks_fts_vocab` (fts5vocab exposing the trigram index)
+Key tables: `chunks_fts` (FTS5 with `tokenize='simple'`), `chunks_fts_vocab` (fts5vocab), `chunks` (content table)
+
+Extension: `lib/libsimple-linux-ubuntu-latest/libsimple.so` — loaded in `get_connection()`
+
+**History**: Trigram (12x bloat, multi-minute queries) → plain unicode61 (CJK runs = single tokens, broken) → space-separation (works but transforms data) → simple tokenizer (native, clean, correct).
 
 ## Key Docs
 
@@ -111,8 +120,8 @@ Call `codebase_map()` at the START of every session before any other work.
 
 - Do NOT create duplicate scripts — modify existing ones
 - Do NOT add features without tests
-- Do NOT use unicode61 tokenizer for Chinese text — always trigram
+- Do NOT use trigram or plain unicode61 for Chinese FTS5 — use the simple tokenizer
 - Do NOT embed full articles — chunk into sentences first
 - Do NOT commit data/ files or .db files
 - Do NOT use CJKI dictionaries for segmentation or indexing
-- Do NOT add a segmenter dependency — trigram + fts5vocab handles all word lengths
+- Do NOT add a segmenter dependency — simple tokenizer handles character-level tokenization natively
