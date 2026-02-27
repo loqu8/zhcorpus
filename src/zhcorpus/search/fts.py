@@ -1,18 +1,14 @@
-"""FTS5 trigram search for Chinese text.
+"""FTS5 search for Chinese text using the 'simple' tokenizer.
 
-Uses the trigram tokenizer for all queries. For terms >= 3 characters,
-direct FTS5 MATCH. For shorter terms (1-2 chars, common in Chinese),
-we expand via fts5vocab: find all indexed trigrams containing the term,
-then OR them together. This gives proper BM25 ranking for every query
-length — no LIKE table scans needed.
+The simple tokenizer (github.com/wangfenjin/simple) handles Chinese
+character-level tokenization natively in C — each CJK character becomes
+a separate FTS5 token. No data transformation needed: raw Chinese text
+goes in, simple_query() builds the right MATCH expression.
 """
 
 import sqlite3
 from dataclasses import dataclass
 from typing import List
-
-# Trigram FTS5 requires at least 3 characters for direct MATCH
-_MIN_TRIGRAM_CHARS = 3
 
 
 @dataclass
@@ -24,33 +20,8 @@ class SearchResult:
     title: str
     rank: float
     snippet: str
-
-
-def _fts5_quote(term: str) -> str:
-    """Escape a term for safe use in FTS5 trigram MATCH queries."""
-    return '"' + term.replace('"', '""') + '"'
-
-
-def _expand_short_term(conn: sqlite3.Connection, term: str) -> str:
-    """Expand a short term (< 3 chars) into an OR query via fts5vocab.
-
-    Finds all trigrams in the index that contain the short term,
-    then builds an OR query so FTS5 can search with BM25 ranking.
-
-    Returns an FTS5 MATCH expression, or empty string if no trigrams found.
-    """
-    pattern = f"%{term}%"
-    rows = conn.execute(
-        "SELECT DISTINCT term FROM chunks_fts_vocab WHERE term LIKE ?",
-        (pattern,),
-    ).fetchall()
-
-    if not rows:
-        return ""
-
-    # Build OR query from matching trigrams
-    parts = [_fts5_quote(row["term"]) for row in rows]
-    return " OR ".join(parts)
+    article_id: int = 0
+    chunk_index: int = 0
 
 
 def _run_fts_query(
@@ -68,7 +39,9 @@ def _run_fts_query(
             s.name AS source,
             a.title,
             chunks_fts.rank AS rank,
-            snippet(chunks_fts, 0, '', '', '...', ?) AS snippet
+            simple_snippet(chunks_fts, 0, '', '', '...', ?) AS snippet,
+            c.article_id,
+            c.chunk_index
         FROM chunks_fts
         JOIN chunks c ON c.id = chunks_fts.rowid
         JOIN articles a ON a.id = c.article_id
@@ -87,6 +60,8 @@ def _run_fts_query(
             title=row["title"],
             rank=row["rank"],
             snippet=row["snippet"],
+            article_id=row["article_id"],
+            chunk_index=row["chunk_index"],
         )
         for row in rows
     ]
@@ -100,96 +75,124 @@ def search_fts(
 ) -> List[SearchResult]:
     """Search the corpus for a Chinese term.
 
-    For terms >= 3 characters: direct FTS5 trigram MATCH.
-    For shorter terms: expand via fts5vocab into an OR query
-    of all trigrams containing the term, preserving BM25 ranking.
+    Uses simple_query() to build the FTS5 MATCH expression.
+    The simple tokenizer handles Chinese character-level tokenization
+    natively — no preprocessing needed.
 
     Args:
         conn: Database connection.
         term: Chinese term to search for.
         limit: Maximum results.
-        snippet_tokens: Context window size for FTS5 snippet extraction.
+        snippet_tokens: Context window for snippet extraction.
 
     Returns:
         List of SearchResult ordered by BM25 relevance.
     """
-    if len(term) >= _MIN_TRIGRAM_CHARS:
-        match_expr = _fts5_quote(term)
-    else:
-        match_expr = _expand_short_term(conn, term)
-        if not match_expr:
-            return []
+    match_expr = conn.execute(
+        "SELECT simple_query(?)", (term,)
+    ).fetchone()[0]
+    return _run_fts_query(conn, match_expr, limit, snippet_tokens)
 
-    results = _run_fts_query(conn, match_expr, limit, snippet_tokens)
 
-    # Post-filter: ensure the actual term appears in the text.
-    # The trigram OR expansion can match chunks where the trigram exists
-    # but the 2-char term is split across a different boundary.
-    if len(term) < _MIN_TRIGRAM_CHARS:
-        results = [r for r in results if term in r.text]
+@dataclass
+class ContextPassage:
+    """A chunk with surrounding context from the same article."""
+    source: str
+    title: str
+    hit_text: str
+    context: str  # surrounding chunks joined
+    hit_index: int  # which chunk in the context contains the hit
+    chunk_count: int  # total chunks in the context window
 
-    return results
+
+def get_context(
+    conn: sqlite3.Connection,
+    result: SearchResult,
+    before: int = 2,
+    after: int = 2,
+) -> ContextPassage:
+    """Expand a search result to include neighboring chunks.
+
+    Like grep -C: returns the hit chunk plus `before` chunks above
+    and `after` chunks below from the same article.
+
+    Args:
+        conn: Database connection.
+        result: A SearchResult from search_fts.
+        before: Number of chunks before the hit to include.
+        after: Number of chunks after the hit to include.
+
+    Returns:
+        ContextPassage with the hit embedded in surrounding text.
+    """
+    lo = max(0, result.chunk_index - before)
+    hi = result.chunk_index + after
+
+    rows = conn.execute(
+        """
+        SELECT chunk_index, text
+        FROM chunks
+        WHERE article_id = ? AND chunk_index BETWEEN ? AND ?
+        ORDER BY chunk_index
+        """,
+        (result.article_id, lo, hi),
+    ).fetchall()
+
+    texts = [row["text"] for row in rows]
+    indices = [row["chunk_index"] for row in rows]
+
+    # Find where the hit chunk is in the window
+    try:
+        hit_pos = indices.index(result.chunk_index)
+    except ValueError:
+        hit_pos = 0
+
+    return ContextPassage(
+        source=result.source,
+        title=result.title,
+        hit_text=result.text,
+        context="\n".join(texts),
+        hit_index=hit_pos,
+        chunk_count=len(texts),
+    )
+
+
+def get_full_article(
+    conn: sqlite3.Connection,
+    article_id: int,
+) -> str:
+    """Return all chunks for an article, joined as full text."""
+    rows = conn.execute(
+        "SELECT text FROM chunks WHERE article_id = ? ORDER BY chunk_index",
+        (article_id,),
+    ).fetchall()
+    return "\n".join(row["text"] for row in rows)
 
 
 def count_hits(conn: sqlite3.Connection, term: str) -> int:
     """Count how many chunks contain the term."""
-    if len(term) >= _MIN_TRIGRAM_CHARS:
-        match_expr = _fts5_quote(term)
-    else:
-        match_expr = _expand_short_term(conn, term)
-        if not match_expr:
-            return 0
-
+    match_expr = conn.execute("SELECT simple_query(?)", (term,)).fetchone()[0]
     row = conn.execute(
         "SELECT COUNT(*) AS n FROM chunks_fts WHERE chunks_fts MATCH ?",
         (match_expr,),
     ).fetchone()
-    n = row["n"] if row else 0
-
-    # For short terms, the count may include false positives from
-    # trigram expansion. For accuracy, fall back to exact count.
-    if len(term) < _MIN_TRIGRAM_CHARS and n > 0:
-        row = conn.execute(
-            "SELECT COUNT(*) AS n FROM chunks WHERE text LIKE ?",
-            (f"%{term}%",),
-        ).fetchone()
-        return row["n"] if row else 0
-
-    return n
+    return row["n"] if row else 0
 
 
 def count_hits_by_source(conn: sqlite3.Connection, term: str) -> dict:
     """Count hits per source for a term."""
-    if len(term) >= _MIN_TRIGRAM_CHARS:
-        match_expr = _fts5_quote(term)
-        rows = conn.execute(
-            """
-            SELECT s.name AS source, COUNT(*) AS n
-            FROM chunks_fts
-            JOIN chunks c ON c.id = chunks_fts.rowid
-            JOIN articles a ON a.id = c.article_id
-            JOIN sources s ON s.id = a.source_id
-            WHERE chunks_fts MATCH ?
-            GROUP BY s.name
-            ORDER BY n DESC
-            """,
-            (match_expr,),
-        ).fetchall()
-        return {row["source"]: row["n"] for row in rows}
-
-    # For short terms, use the fts5vocab expansion for search
-    # but verify with exact text match for accurate counts
-    pattern = f"%{term}%"
+    match_expr = conn.execute("SELECT simple_query(?)", (term,)).fetchone()[0]
     rows = conn.execute(
         """
         SELECT s.name AS source, COUNT(*) AS n
-        FROM chunks c
+        FROM chunks_fts
+        JOIN chunks c ON c.id = chunks_fts.rowid
         JOIN articles a ON a.id = c.article_id
         JOIN sources s ON s.id = a.source_id
-        WHERE c.text LIKE ?
+        WHERE chunks_fts MATCH ?
         GROUP BY s.name
         ORDER BY n DESC
         """,
-        (pattern,),
+        (match_expr,),
     ).fetchall()
     return {row["source"]: row["n"] for row in rows}

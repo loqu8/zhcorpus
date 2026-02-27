@@ -6,7 +6,12 @@ from pathlib import Path
 from typing import Optional
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
+
+# Path to the simple tokenizer extension (.so/.dylib/.dll).
+# Resolve relative to this file so it works from any working directory.
+_LIB_DIR = Path(__file__).resolve().parent.parent.parent / "lib" / "libsimple-linux-ubuntu-latest"
+SIMPLE_EXT_PATH = str(_LIB_DIR / "libsimple")
 
 SCHEMA_SQL = """
 -- Sources: where the text came from
@@ -42,17 +47,18 @@ CREATE TABLE IF NOT EXISTS chunks (
 CREATE INDEX IF NOT EXISTS idx_chunks_article ON chunks(article_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_hash ON chunks(content_hash);
 
--- FTS5 with trigram tokenizer — CJK-friendly substring matching
+-- FTS5 with 'simple' tokenizer — Chinese character-level tokenization.
+-- Each CJK character is a separate token; phrase queries match exact
+-- adjacent character sequences at any length. Uses content table so
+-- snippet/highlight work and triggers keep the index in sync.
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
     text,
     content='chunks',
     content_rowid='id',
-    tokenize='trigram'
+    tokenize='simple'
 );
 
--- fts5vocab: exposes the trigram index vocabulary for short-term expansion.
--- For 2-char Chinese words (e.g. 选任), we find all trigrams containing the
--- term and build an OR query, giving proper BM25 ranking without LIKE scans.
+-- fts5vocab: exposes the token index vocabulary for diagnostics and analysis.
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts_vocab
     USING fts5vocab(chunks_fts, row);
 
@@ -94,9 +100,12 @@ def content_hash(text: str) -> str:
 
 
 def get_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
-    """Get a database connection. Uses :memory: if no path given."""
+    """Get a database connection with the simple tokenizer loaded."""
     path = str(db_path) if db_path else ":memory:"
     conn = sqlite3.connect(path)
+    conn.enable_load_extension(True)
+    conn.load_extension(SIMPLE_EXT_PATH)
+    conn.enable_load_extension(False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.row_factory = sqlite3.Row
@@ -154,7 +163,7 @@ def insert_chunk(
     chunk_index: int,
     text: str,
 ) -> int:
-    """Insert a chunk, return its id."""
+    """Insert a chunk, return its id. FTS5 trigger handles indexing."""
     h = content_hash(text)
     cur = conn.execute(
         "INSERT OR IGNORE INTO chunks (article_id, chunk_index, text, char_count, content_hash) "
@@ -168,3 +177,9 @@ def insert_chunk(
         (article_id, chunk_index),
     ).fetchone()
     return row["id"]
+
+
+def rebuild_fts(conn: sqlite3.Connection) -> None:
+    """Rebuild FTS5 index from the content table."""
+    conn.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('rebuild')")
+    conn.commit()
