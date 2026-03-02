@@ -122,7 +122,7 @@
 - **Stats**: 2,680,000 criminal case descriptions with charges and sentencing
 - **Size**: ~5-10 GB uncompressed
 - **Format**: JSON with fact description, relevant articles, charges, prison term
-- **License**: CC BY-NC-SA 4.0
+- **License**: MIT (per LICENSE file in repo)
 - **Download**: Direct from GitHub / associated links
 - **Value**: Legal register — 量刑, 缓刑, 取保候审, 侵权, 追诉. Vocabulary not found in any other source.
 - **Chunking estimate**: ~5-8M chunks

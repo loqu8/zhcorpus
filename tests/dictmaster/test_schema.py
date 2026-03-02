@@ -39,7 +39,7 @@ class TestSchema:
         row = db.execute(
             "SELECT value FROM schema_info WHERE key = 'version'"
         ).fetchone()
-        assert row["value"] == "2"
+        assert row["value"] == "3"
 
     def test_foreign_keys_enabled(self, db):
         result = db.execute("PRAGMA foreign_keys").fetchone()

@@ -1,6 +1,6 @@
 # FTS5 Performance on 112M Chunks
 
-## Problem
+## Problem 1: BM25 Ranking Timeout
 
 Single-character queries (的, 学) match tens of millions of chunks.
 FTS5 BM25 ranking (`ORDER BY rank`) is O(n) — it must score every
@@ -195,6 +195,25 @@ SELECT COUNT(*) FROM (
    rare terms to BM25. Unnecessary; per-source sampling is fast enough
    for all term lengths.
 
+## Problem 2: AND Query False Positives
+
+`simple_query()` generates AND queries: `simple_query("选任")` → `"选" AND "任"`.
+This matches any chunk containing both characters *anywhere*, not adjacent.
+
+| Term | AND Precision | Phrase Precision |
+|------|:------------:|:---------------:|
+| 银行 | 76% | 100% |
+| 选任 | 2% | 100% |
+| 经济 | 92% | 100% |
+| 营商环境 | 20% | 100% |
+| 画蛇添足 | 97% | 100% |
+| 学而时习之 | 6% | 100% |
+
+**Fix**: `_make_phrase_query()` builds FTS5 phrase queries (`"选 任"`) requiring
+adjacency. 100% precision for all term lengths. Performance cost: phrase queries
+are slower for rare terms with common characters (选任: 10ms vs 2ms, 学而时习之:
+216ms vs 17ms) but still sub-second.
+
 ## Key Insights
 
 1. **FTS5 posting-list traversal is O(LIMIT), not O(matches).**
@@ -210,3 +229,6 @@ SELECT COUNT(*) FROM (
 
 4. **Source ranges are static.** They only change during import. Materialize
    once in `source_chunk_ranges` table, load in 0.0s at query time.
+
+5. **simple_query() is wrong for multi-char terms.** It generates AND
+   queries, not phrase queries. Use `_make_phrase_query()` for adjacency.

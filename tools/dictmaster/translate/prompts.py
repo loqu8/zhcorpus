@@ -60,6 +60,7 @@ LANG_NAMES = {
     "id": "Indonesian",
     "vi": "Vietnamese",
     "tl": "Tagalog",
+    "fa": "Persian",
 }
 
 
@@ -143,11 +144,11 @@ def build_batch_prompt(
 # Universal (all-languages-at-once) prompts
 # ---------------------------------------------------------------------------
 
-ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl"]
+ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa"]
 
 UNIVERSAL_SYSTEM_PROMPT = """\
 You are a professional multilingual Chinese lexicographer producing \
-dictionary-style definitions in 11 languages.
+dictionary-style definitions in 12 languages.
 
 Rules:
 - Output EXACTLY one line per language in format "xx: def1/def2"
@@ -157,7 +158,22 @@ Rules:
 - For nouns, give the most common equivalent(s)
 - Maximum 5 glosses per entry
 - If an existing definition is provided, you may rewrite it for consistency
-- No explanatory notes, no parenthetical qualifiers unless essential"""
+- No explanatory notes, no parenthetical qualifiers unless essential
+
+CRITICAL: Every non-Chinese definition must contain ZERO Chinese characters (汉字). \
+If you catch yourself writing 漢字/汉字 in any definition, replace them with the \
+target language equivalent.
+
+Language-specific rules:
+- ja (Japanese): Provide the MEANING in Japanese, not just kanji echo or kana reading. \
+Write a Japanese definition/gloss that explains the word (e.g. 銀行 → 金融機関/お金を預ける場所, \
+NOT 銀行 or ぎんこう). Use native Japanese vocabulary.
+- ko (Korean): Write in Hangul only. Do NOT mix in Chinese characters (漢字/한자). \
+Example: 은행/금융 기관, NOT 銀行/은행.
+- tl (Tagalog): Use natural Tagalog vocabulary. Do NOT produce literal word-for-word \
+translations from English. Prefer established Tagalog equivalents.
+- fa (Persian): Write definitions in Persian script (فارسی). Use native Persian vocabulary.
+- vi (Vietnamese): Write in Vietnamese with proper diacritics. Do NOT include Chinese characters."""
 
 UNIVERSAL_TRANSLATE_TEMPLATE = """\
 Chinese: {traditional} / {simplified}

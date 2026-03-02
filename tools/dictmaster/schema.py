@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 DEFAULT_DB_PATH = Path("data/artifacts/dictmaster.db")
 
@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS definitions (
     source TEXT NOT NULL,
     confidence TEXT,
     verified INTEGER DEFAULT 0,
+    prompt_version TEXT,
     UNIQUE(headword_id, lang, source)
 );
 CREATE INDEX IF NOT EXISTS idx_definitions_headword ON definitions(headword_id);
@@ -143,8 +144,25 @@ def get_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
 
 
 def init_db(conn: sqlite3.Connection) -> None:
-    """Create all tables and indexes."""
+    """Create all tables and indexes, run migrations for existing DBs."""
     conn.executescript(SCHEMA_SQL)
+
+    # Check current schema version for migrations
+    try:
+        row = conn.execute(
+            "SELECT value FROM schema_info WHERE key = 'version'"
+        ).fetchone()
+        current_version = int(row["value"]) if row else 0
+    except Exception:
+        current_version = 0
+
+    # Migration: v2 -> v3: add prompt_version column to definitions
+    if current_version < 3:
+        try:
+            conn.execute("ALTER TABLE definitions ADD COLUMN prompt_version TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists (e.g. fresh DB created with v3 schema)
+
     conn.execute(
         "INSERT OR REPLACE INTO schema_info (key, value) VALUES ('version', ?)",
         (str(SCHEMA_VERSION),),
@@ -212,12 +230,14 @@ def upsert_definition(
     definition: str,
     source: str,
     confidence: Optional[str] = None,
+    prompt_version: Optional[str] = None,
 ) -> int:
     """Insert or update a definition, return its id."""
     cur = conn.execute(
-        "INSERT OR REPLACE INTO definitions (headword_id, lang, definition, source, confidence) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (headword_id, lang, definition, source, confidence),
+        "INSERT OR REPLACE INTO definitions "
+        "(headword_id, lang, definition, source, confidence, prompt_version) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (headword_id, lang, definition, source, confidence, prompt_version),
     )
     return cur.lastrowid
 
