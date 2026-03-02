@@ -207,6 +207,7 @@ def step_translate_universal(
     skip_corpus: bool = False,
     target_langs: list[str] | None = None,
     workers: int = 1,
+    prompt_version: str = "v2",
 ) -> None:
     """Translate all headwords into all languages in one pass per batch.
 
@@ -219,7 +220,9 @@ def step_translate_universal(
     Checkpoint: skips headwords that already have source="minimax" definitions.
     With workers > 1, runs multiple API calls in parallel.
     """
-    if backend == "ollama":
+    if backend == "groq":
+        from tools.dictmaster.translate.groq_api import translate_universal_batch
+    elif backend == "ollama":
         from tools.dictmaster.translate.minimax_ollama import translate_universal_batch
     else:
         from tools.dictmaster.translate.minimax_api import translate_universal_batch
@@ -227,10 +230,12 @@ def step_translate_universal(
     from tools.dictmaster.translate.prompts import ALL_TARGET_LANGS
     from tools.dictmaster.schema import ensure_source, upsert_definition
 
+    source_name = "groq-kimi-k2" if backend == "groq" else "minimax"
+
     langs = target_langs or ALL_TARGET_LANGS
 
     conn = get_connection(db_path)
-    ensure_source(conn, "minimax")
+    ensure_source(conn, source_name)
 
     # Open corpus connection for example sentences
     corpus_conn = None
@@ -249,16 +254,16 @@ def step_translate_universal(
         else:
             print(f"  Corpus DB not found at {ZHCORPUS_DB_PATH}, skipping examples")
 
-    # Find headwords that don't yet have ANY minimax definitions
+    # Find headwords that don't yet have definitions from this source
     rows = conn.execute("""
         SELECT h.id, h.traditional, h.simplified, h.pinyin, h.pos
         FROM headwords h
         WHERE NOT EXISTS (
             SELECT 1 FROM definitions d
-            WHERE d.headword_id = h.id AND d.source = 'minimax'
+            WHERE d.headword_id = h.id AND d.source = ?
         )
         ORDER BY h.id
-    """).fetchall()
+    """, (source_name,)).fetchall()
 
     if limit:
         rows = rows[:limit]
@@ -318,7 +323,8 @@ def step_translate_universal(
             for lang, defn in lang_defs.items():
                 if defn and lang in langs:
                     upsert_definition(
-                        conn, entry["id"], lang, defn, "minimax", confidence="medium"
+                        conn, entry["id"], lang, defn, source_name,
+                        confidence="medium", prompt_version=prompt_version,
                     )
                     translated_defs += 1
             translated_entries += 1
@@ -348,54 +354,76 @@ def step_translate_universal(
                 f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)"
             )
     else:
-        # Parallel mode: prepare batches, send API calls concurrently, save sequentially
+        # Parallel mode: prepare batches on main thread, API calls in workers
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        # Build all batch entry lists upfront (DB reads are sequential)
-        all_batches = []
-        for i in range(0, total, batch_size):
-            batch_rows = rows[i:i + batch_size]
+        executor = ThreadPoolExecutor(max_workers=workers)
+        pending = {}
+        batch_entries = {}  # batch_idx -> entries (for saving results)
+        next_batch_idx = 0
+        completed_since_commit = 0
+        progress_interval = batch_size * 10
+
+        # Pre-prepare and submit initial batches
+        for _ in range(min(workers * 2, (total + batch_size - 1) // batch_size)):
+            if next_batch_idx >= total:
+                break
+            batch_rows = rows[next_batch_idx:next_batch_idx + batch_size]
             entries = _prepare_batch(batch_rows)
-            all_batches.append((i, entries))
+            batch_entries[next_batch_idx] = entries
+            fut = executor.submit(_translate_one_batch, entries)
+            pending[fut] = next_batch_idx
+            next_batch_idx += batch_size
 
-        # Process in chunks of `workers` concurrent API calls
-        chunk_size = workers
-        for chunk_start in range(0, len(all_batches), chunk_size):
-            chunk = all_batches[chunk_start:chunk_start + chunk_size]
+        # as_completed() snapshots its input — use a while loop so newly
+        # submitted futures are picked up on each iteration.
+        while pending:
+            done_futures = set()
+            for fut in as_completed(pending):
+                done_futures.add(fut)
+                break  # process one at a time so we can submit new work
 
-            # Submit all batches in this chunk concurrently
-            with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = {}
-                for batch_idx, entries in chunk:
-                    fut = executor.submit(_translate_one_batch, entries)
-                    futures[fut] = (batch_idx, entries)
+            for fut in done_futures:
+                bidx = pending.pop(fut)
+                entries = batch_entries.pop(bidx)
+                try:
+                    results = fut.result()
+                    _save_results(entries, results)
+                    completed_since_commit += 1
+                except Exception as e:
+                    print(f"    ERROR at batch {bidx}: {e}")
 
-                for fut in as_completed(futures):
-                    batch_idx, entries = futures[fut]
-                    try:
-                        results = fut.result()
-                        _save_results(entries, results)
-                    except Exception as e:
-                        print(f"    ERROR at batch {batch_idx}: {e}")
+                # Submit next batch (prepare on main thread, API call in worker)
+                if next_batch_idx < total:
+                    batch_rows = rows[next_batch_idx:next_batch_idx + batch_size]
+                    new_entries = _prepare_batch(batch_rows)
+                    batch_entries[next_batch_idx] = new_entries
+                    new_fut = executor.submit(_translate_one_batch, new_entries)
+                    pending[new_fut] = next_batch_idx
+                    next_batch_idx += batch_size
 
-            conn.commit()
+            # Periodic commit
+            if completed_since_commit >= workers * 2:
+                conn.commit()
+                completed_since_commit = 0
 
-            # Progress reporting after each chunk of parallel batches
-            done = min(
-                (chunk_start + chunk_size) * batch_size,
-                total,
-            )
-            done = min(done, total)
-            elapsed = time.time() - t_start
-            rate = done / elapsed if elapsed > 0 else 0
-            eta = (total - done) / rate if rate > 0 else 0
-            print(
-                f"    [{done:,}/{total:,}] "
-                f"{translated_entries:,} entries, {translated_defs:,} defs "
-                f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)"
-            )
+            # Progress reporting
+            done = translated_entries
+            if done % progress_interval < batch_size or not pending:
+                elapsed = time.time() - t_start
+                rate = done / elapsed if elapsed > 0 else 0
+                eta = (total - done) / rate if rate > 0 else 0
+                print(
+                    f"    [{done:,}/{total:,}] "
+                    f"{translated_entries:,} entries, {translated_defs:,} defs "
+                    f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)"
+                )
 
-    update_source_count(conn, "minimax")
+        # Final commit
+        conn.commit()
+        executor.shutdown(wait=False)
+
+    update_source_count(conn, source_name)
     conn.close()
     if corpus_conn:
         corpus_conn.close()
@@ -517,14 +545,16 @@ def main():
                         help="Target language for single-language translate (legacy mode)")
     parser.add_argument("--langs", default=None,
                         help="Comma-separated target languages for universal translate (default: all 11)")
-    parser.add_argument("--backend", choices=["ollama", "api"], default="ollama",
-                        help="Translation backend")
+    parser.add_argument("--backend", choices=["ollama", "api", "groq"], default="groq",
+                        help="Translation backend (groq=Kimi K2 on Groq, api=MiniMax, ollama=local)")
     parser.add_argument("--limit", type=int, default=None, help="Limit entries for testing")
     parser.add_argument("--batch-size", type=int, default=20, help="Batch size for translation")
     parser.add_argument("--skip-corpus", action="store_true",
                         help="Skip corpus example sentence lookups (faster)")
     parser.add_argument("--workers", type=int, default=1,
                         help="Parallel API workers for universal translate (default: 1)")
+    parser.add_argument("--prompt-version", default="v2",
+                        help="Prompt version tag stored with definitions (default: v2)")
     args = parser.parse_args()
 
     # Ensure DB directory exists
@@ -556,6 +586,7 @@ def main():
                 skip_corpus=args.skip_corpus,
                 target_langs=target_langs,
                 workers=args.workers,
+                prompt_version=args.prompt_version,
             )
 
     if args.step in ("dialect",):

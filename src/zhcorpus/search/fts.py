@@ -126,6 +126,21 @@ def materialize_source_ranges(conn: sqlite3.Connection) -> int:
     return len(ranges)
 
 
+def _make_phrase_query(term: str) -> str:
+    """Build an FTS5 phrase query for a Chinese term.
+
+    Character-level tokenization means each CJK character is a token.
+    simple_query() produces AND queries ("选" AND "任") which match
+    non-adjacent characters — giving false positives like "选择任何".
+
+    Phrase queries ("选 任") require adjacency — 100% precision.
+    For single characters, returns a simple token match.
+    """
+    if len(term) <= 1:
+        return f'"{term}"'
+    return '"' + " ".join(term) + '"'
+
+
 def _run_fts_query(
     conn: sqlite3.Connection,
     match_expr: str,
@@ -270,9 +285,10 @@ def search_fts(
 ) -> List[SearchResult]:
     """Search the corpus for a Chinese term.
 
-    Uses simple_query() to build the FTS5 MATCH expression.
-    The simple tokenizer handles Chinese character-level tokenization
-    natively — no preprocessing needed.
+    Uses phrase queries for exact multi-character matching. The simple
+    tokenizer splits CJK text into individual character tokens; a phrase
+    query requires adjacency, giving 100% precision (no false positives
+    from non-adjacent characters).
 
     Args:
         conn: Database connection.
@@ -283,9 +299,7 @@ def search_fts(
     Returns:
         List of SearchResult in posting-list order (BM25 skipped for perf).
     """
-    match_expr = conn.execute(
-        "SELECT simple_query(?)", (term,)
-    ).fetchone()[0]
+    match_expr = _make_phrase_query(term)
     return _run_fts_query(conn, match_expr, limit, snippet_tokens)
 
 
@@ -374,7 +388,7 @@ def count_hits(
     ensures consistent sub-second response times. Returns the cap
     value when the actual count exceeds it.
     """
-    match_expr = conn.execute("SELECT simple_query(?)", (term,)).fetchone()[0]
+    match_expr = _make_phrase_query(term)
     row = conn.execute(
         "SELECT COUNT(*) AS n FROM "
         "(SELECT 1 FROM chunks_fts WHERE chunks_fts MATCH ? LIMIT ?)",
@@ -396,7 +410,7 @@ def count_hits_by_source(
     For rare terms (< cap_per_source matches in a source), count is exact.
     For common terms, returns the cap value for that source.
     """
-    match_expr = conn.execute("SELECT simple_query(?)", (term,)).fetchone()[0]
+    match_expr = _make_phrase_query(term)
     source_ranges = _get_source_ranges(conn)
 
     if not source_ranges:
