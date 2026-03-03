@@ -233,8 +233,12 @@ Tested 20+ additional models on the same 5-headword suite.
 | **Cerebras** | `api.cerebras.ai/v1` | API key | 1M tok/day | Fast (wafer) |
 | **SambaNova** | `api.sambanova.ai/v1` | API key | $5 credit + 200K tok/day | **Fastest** |
 | **SiliconFlow** | `api.siliconflow.com/v1` | API key | Free tier | Moderate |
+| **Hugging Face** | `router.huggingface.co/v1` | HF token | Pay-per-token (via providers) | Varies |
+| **Fireworks** | `api.fireworks.ai/inference/v1` | API key | $6 credit (signup bonus) | Fast |
+| **DeepInfra** | `api.deepinfra.com/v1/openai` | API key | None (requires billing) | — |
+| **Replicate** | `api.replicate.com/v1` | API key | Unknown | — |
 
-All API keys stored in `~/.model-radar/config.json`.
+All API keys stored in `~/.model-radar/config.json` (10 providers configured).
 
 ### NIM Round 2 Results (entry 110)
 
@@ -336,6 +340,9 @@ Tested on same 5 headwords. None viable for production.
 | **GLM 5** | NIM / SiliconFlow | ~19s | No — slow |
 | **Qwen3 235B** | SambaNova | ~3.7s | No — 200K tok/day |
 | **ByteDance Seed 36B** | SiliconFlow | ~55s | No — too slow |
+| **MiniMax M2.1** | Fireworks | **5.4s** | Maybe — $6 credit, needs pricing check |
+| **Kimi K2.5** | Fireworks | ~9.8s | Maybe — $6 credit |
+| **GLM 5** | Fireworks | ~11.3s | Maybe — $6 credit |
 
 **Failed/Terrible**:
 - DeepSeek V3.1 (NIM) — translates digits
@@ -363,9 +370,10 @@ Tested on same 5 headwords. None viable for production.
 - Source name in DB: `minimax`
 - CLI: `--backend api`
 
-### model-radar MCP
-- Discovery tool for free/paid LLM models across 17 providers
-- SSE server on port 8743 (systemd service)
+### model-radar MCP (v0.5.0)
+- Discovery tool: 173 models across 17 providers
+- Live model sync for 7 providers (OpenRouter, NIM, Groq, Cerebras, SambaNova, SiliconFlow, HuggingFace)
+- SSE server on port 8743
 - Config: `~/.claude.json` (NOT `settings.json`)
 - Useful for scanning latency, comparing models, running test prompts
 
@@ -382,6 +390,119 @@ Tested on same 5 headwords. None viable for production.
 
 **Not recommended**: DeepSeek V3.2 (echoes headword), MiniMax M2.1 (167s thinking), GPT-OSS 120B (drops context).
 
+## HuggingFace Router (Round 5, 2026-03-02)
+
+HuggingFace Router (`router.huggingface.co/v1`) is a unified API frontend that routes to
+backend providers (novita, together, cerebras, sambanova, groq, etc.). 120 text models
+available. One API key, many models.
+
+### Single-Entry Screening (entry 110)
+
+| Model | Time | Langs | Geographic Context | Issue |
+|-------|------|-------|--------------------|-------|
+| **GPT OSS 120B** | 1.3s | 12/12 | No | Clean output |
+| **Qwen3 235B** | 2.8s | 12/12 | Yes | Clean output |
+| **GLM 5** | 15.5s | 12/12 | Yes | Clean output |
+| **MiniMax M2.5** | 26.7s | 12/12 | Yes | Clean output |
+| Llama 3.3 70B | 0.6s | 8/12 | Yes | Truncated (missing ja/ko/ru/id) |
+| Kimi K2.5 | 12.9s | 0/12 | — | Empty content |
+| DeepSeek V3.2 | 60s | — | — | Timeout |
+| Qwen3 32B | 3.5s | 0/12 | — | Burns all tokens on `<think>` |
+| DeepSeek R1 0528 | 4.4s | 0/12 | — | Burns all tokens on `<think>` |
+| GPT OSS 20B | 1.6s | 0/12 | — | Empty response |
+
+### Full 5-Entry Test (top 4 models)
+
+| Model | Issues | Time | Langs | Notes |
+|-------|--------|------|-------|-------|
+| **Qwen3 235B** | **1** | 41.0s | 60/60 | Best quality (1 minor ko issue) |
+| **GPT OSS 120B** | **2** | **4.0s** | 60/60 | Fastest, 2 minor ko issues |
+| **MiniMax M2.5** | **2** | 107.4s | 58/60 | Missing 2 en defs, slow |
+| GLM 5 | 13 | 147.3s | 48/60 | 1 empty response, 1 ko issue |
+
+### HuggingFace Findings
+
+1. **Router is a paid aggregator** — routes to novita, together, sambanova, etc. with per-token pricing.
+   Not a free inference platform for larger models.
+2. **Same models, slower** — GLM 5 at 147s via HF vs 97s via NIM; MiniMax M2.5 at 21s/entry
+   vs <2s on SambaNova or direct API. Extra latency from routing layer.
+3. **GPT OSS 120B via HF is fast** — 0.8s/entry, routed via groq. Best speed/quality on HF.
+4. **Thinking models waste tokens** — Qwen3 32B, DeepSeek R1 0528 spend all 1024 tokens on
+   `<think>` reasoning tags, produce zero actual output. Not usable for dictionary tasks on HF.
+5. **Useful for discovery** — one API key lets you test 120 models. Good for eval, not for
+   production runs (go direct to the underlying provider for better speed/price).
+
+## DeepInfra & Fireworks (Round 6, 2026-03-02)
+
+Obtained API keys via GitHub OAuth for 3 new providers: Replicate, DeepInfra, Fireworks.
+Together AI requires $5 deposit — skipped.
+
+### Provider Access Summary
+
+| Provider | OAuth | Free Tier |
+|----------|-------|-----------|
+| **Fireworks** | GitHub | **$6 credit** ($5 bonus + $1) |
+| **DeepInfra** | GitHub | **None** — requires positive balance |
+| **Replicate** | GitHub | Unknown |
+| Together AI | GitHub | Requires $5 deposit |
+
+API keys stored in `~/.model-radar/config.json`.
+
+Now 10 of 17 model-radar providers configured (was 7).
+
+### DeepInfra — All 402
+
+All 8 models returned HTTP 402 "You need positive balance to do inference."
+DeepInfra has **no free tier** — requires billing setup even for first call.
+142 models available via `/v1/models` but all gated behind payment.
+
+Models tested: Qwen3 235B, GPT OSS 120B, MiniMax M2.5, GLM 5, Kimi K2.5, DeepSeek V3.2, Qwen3 Coder 480B, GLM 4.7.
+
+### Fireworks — Single-Entry Screening (entry 110)
+
+| Model | Time | Langs | Geographic Context | Issues |
+|-------|------|-------|--------------------|--------|
+| **MiniMax M2.1** | **4.5s** | 12/12 | Yes | 0 — clean |
+| **GPT OSS 120B** | 7.5s | 12/12 | No | 0 — clean output |
+| **Kimi K2.5** | 7.3s | 12/12 | Yes | 0 — preamble text |
+| **GLM 5** | 8.9s | 12/12 | Yes | 0 — clean |
+| DeepSeek V3.2 | 90s | — | — | TIMEOUT |
+
+All tested via model-radar dogfooding (`_call_model()` with manually constructed `Model` objects).
+
+### Fireworks — Full 5-Entry Test (top 4 models)
+
+| Model | Time | Langs | Tokens (p/c) | Issues | Notes |
+|-------|------|-------|-------------|--------|-------|
+| **MiniMax M2.1** | **26.8s** | **60/60** | — | **0** | **Best — fast + perfect** |
+| **Kimi K2.5** | 49.1s | 60/60 | — | 0 | Perfect quality |
+| **GLM 5** | 56.4s | 60/60 | — | 0 | Perfect quality |
+| GPT OSS 120B | 31.6s | 53/60 | — | 1 | Missed 7 langs on entry 1 |
+
+**MiniMax M2.1 on Fireworks is the surprise winner**: 5.4s/entry, zero issues across all 60 language slots.
+This is the same model that was 167s on NIM due to thinking mode — Fireworks serves it WITHOUT thinking,
+making it fast and clean.
+
+### Fireworks Findings
+
+1. **$6 free credit** goes far — 5-entry test on 4 models barely dents it
+2. **MiniMax M2.1 = night and day vs NIM** — 5.4s/entry (FW) vs 167s/entry (NIM). No thinking mode on Fireworks.
+3. **Kimi K2.5 and GLM 5 both perfect** — 60/60 langs, 0 issues, but 2× slower than MiniMax
+4. **GPT OSS 120B inconsistent** — missed 7 languages on first entry but 12/12 on other 4
+5. **DeepSeek V3.2 timeout** — consistent across providers (also timed out on HF)
+6. **model-radar dogfooding works** — `_call_model()` with manual `Model` objects bypasses stale registry
+7. **model-radar gap**: `provider_sync.py` has no fetch functions for deepinfra/fireworks (only 7 of 17 providers)
+
+### Key Insight: Same Model, Different Provider, Wildly Different Results
+
+| Model | NIM | SambaNova | Groq | Fireworks | HuggingFace |
+|-------|-----|-----------|------|-----------|-------------|
+| MiniMax M2.1 | 167s (thinking) | — | — | **5.4s (clean)** | — |
+| Llama 4 Maverick | Echoes "110" | **Perfect** | — | — | — |
+| Qwen3 235B | — | **Perfect** | Burns tokens | — | 8.2s (clean) |
+| GPT OSS 120B | — | — | Drops context | Drops context | **0.8s (fastest)** |
+| DeepSeek V3.2 | Echoes headword | — | — | Timeout | Timeout |
+
 ## Lessons Learned
 
 ### Benchmarks vs Reality
@@ -390,7 +511,7 @@ Tested on same 5 headwords. None viable for production.
 3. Thinking/reasoning models waste tokens on dictionary tasks — MiniMax M2.1 (167s), Nemotron Nano 30B, Qwen3 on Groq all burn tokens on internal reasoning with no quality benefit
 
 ### Provider Matters
-4. **Same model, different provider = different results** — Llama 4 Maverick is terrible on NIM but perfect on SambaNova; Qwen3 235B fails on Groq but works on SambaNova. The inference stack (quantization, serving framework) matters as much as model weights.
+4. **Same model, different provider = different results** — Llama 4 Maverick is terrible on NIM but perfect on SambaNova; Qwen3 235B fails on Groq but works on SambaNova; MiniMax M2.1 is 167s on NIM but 5.4s on Fireworks. The inference stack (quantization, serving framework, default parameters like thinking mode) matters as much as model weights.
 5. **NVIDIA's business model is hardware, not inference** — NIM credits are a teaser to sell GPUs. No per-token pricing. AI Enterprise license ($4,500/GPU/yr) on top of compute costs.
 6. Free tier rate limits are much more restrictive than marketing suggests — SambaNova: 200K tok/day (585 days for full run), Groq: 10K TPM, Cerebras catalog is mostly phantom models
 
@@ -406,3 +527,34 @@ Tested on same 5 headwords. None viable for production.
 13. Python `-u` flag needed for unbuffered output in nohup runs
 14. SiliconFlow API is `.com` not `.cn` — Python urllib blocked by Cloudflare (1010), use curl
 15. Ollama `think: false` doesn't work on Qwen3 models — model self-narrates in content field
+16. HuggingFace Router adds latency vs going direct to providers — useful for eval/discovery, not production
+17. model-radar expanded to 173 models / 17 providers / live sync for 7 (v0.5.0)
+18. Together AI requires $5 deposit for API access — no free tier
+19. DeepInfra requires positive balance — all calls return 402 without billing
+20. Fireworks gives $6 free credit on signup (GitHub OAuth) — best free offering for eval
+21. **Provider default parameters differ silently** — MiniMax M2.1 on NIM enables thinking mode (167s), same model on Fireworks disables it (5.4s). This is the #1 cause of "same model, different results."
+22. model-radar `provider_sync.py` only has fetch functions for 7 of 17 providers — deepinfra/fireworks need to be added
+
+## Production Run Results (2026-03-02)
+
+### MiniMax M2.5 v2 — Full Translation
+
+| Phase | Entries | Defs | Time | Rate |
+|-------|---------|------|------|------|
+| Main run | 374,602 / 428,073 | 4,410,579 | ~24h | 4.6/s |
+| Retry pass | 53,471 remaining | +616,276 | 92m | 5.4/s |
+| Backfill pass | 82,550 partial | +103,300 | 92m | 14.0/s |
+
+### Final Coverage
+
+- **428,073** headwords, **5,130,189** definitions, **12 languages**
+- **422,198 (98.6%)** headwords with full 12-language coverage
+- **0** headwords with zero definitions
+- Every language at 99.5%+ coverage (worst: fa at 99.5%)
+- Total cost: ~$98 on MiniMax API (main $93 + retry ~$3 + backfill ~$2)
+
+### Backfill Script
+
+`tools/dictmaster/backfill_langs.py` — context-aware gap filler that sends existing
+translations as read-only context so new definitions stay consistent. See
+`docs/translation-backfill-plan.md` for full details.

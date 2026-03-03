@@ -1,0 +1,142 @@
+[
+  {
+    "term": "癌",
+    "band": "high",
+    "baseline": {
+      "term": "癌",
+      "pinyin_accuracy": 1.0,
+      "definition_completeness": 0.6666666666666666,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.9166666666666666
+    },
+    "rag": {
+      "term": "癌",
+      "pinyin_accuracy": 1.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 1.0
+    },
+    "mcp": {
+      "term": "癌",
+      "pinyin_accuracy": 1.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 1.0
+    }
+  },
+  {
+    "term": "学校",
+    "band": "high",
+    "baseline": {
+      "term": "学校",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    },
+    "rag": {
+      "term": "学校",
+      "pinyin_accuracy": 1.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 1.0
+    },
+    "mcp": {
+      "term": "学校",
+      "pinyin_accuracy": 1.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 1.0
+    }
+  },
+  {
+    "term": "子公司",
+    "band": "high",
+    "baseline": {
+      "term": "子公司",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    },
+    "rag": {
+      "term": "子公司",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    },
+    "mcp": {
+      "term": "子公司",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    }
+  },
+  {
+    "term": "人工流产",
+    "band": "high",
+    "baseline": {
+      "term": "人工流产",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 0.6666666666666666,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.6666666666666666
+    },
+    "rag": {
+      "term": "人工流产",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 0.6666666666666666,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.6666666666666666
+    },
+    "mcp": {
+      "term": "人工流产",
+      "pinyin_accuracy": 1.0,
+      "definition_completeness": 0.6666666666666666,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.9166666666666666
+    }
+  },
+  {
+    "term": "踏板摩托车",
+    "band": "high",
+    "baseline": {
+      "term": "踏板摩托车",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    },
+    "rag": {
+      "term": "踏板摩托车",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    },
+    "mcp": {
+      "term": "踏板摩托车",
+      "pinyin_accuracy": 0.0,
+      "definition_completeness": 1.0,
+      "term_present": 1.0,
+      "example_authenticity": 1.0,
+      "composite": 0.75
+    }
+  }
+]

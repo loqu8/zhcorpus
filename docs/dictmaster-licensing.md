@@ -1,8 +1,8 @@
 # Dictmaster — Source Licensing & Distribution Guide
 
-This document tracks the license of every data source used by dictmaster,
-their attribution requirements, and implications for distributing the
-combined output.
+> **ARCHIVED**: This document has been superseded by `docs/licensing.md` which
+> covers both corpus and dictmaster sources in one place. This file is kept
+> for git history only.
 
 ---
 

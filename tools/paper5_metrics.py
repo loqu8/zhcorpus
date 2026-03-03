@@ -19,9 +19,76 @@ from pathlib import Path
 import click
 
 
+def strip_thinking(text: str) -> str:
+    """Strip <think>...</think> blocks from LLM responses (e.g. MiniMax M2.5).
+
+    If the response has content after </think>, use only that content.
+    If the entire response is inside <think> tags (model put the answer in
+    the thinking block), extract and use the thinking content instead.
+    """
+    if '<think>' not in text:
+        return text
+
+    # Try stripping — if there's substantial content after, use that
+    clean = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    if len(clean) > 50:
+        return clean
+
+    # Entire response is inside <think> — extract the thinking content
+    m = re.search(r'<think>(.*?)</think>', text, flags=re.DOTALL)
+    if m:
+        return m.group(1).strip()
+
+    return text.strip()
+
+
+# Diacritical pinyin → numbered tone mapping
+_TONE_MAP = {
+    'ā': 'a1', 'á': 'a2', 'ǎ': 'a3', 'à': 'a4',
+    'ē': 'e1', 'é': 'e2', 'ě': 'e3', 'è': 'e4',
+    'ī': 'i1', 'í': 'i2', 'ǐ': 'i3', 'ì': 'i4',
+    'ō': 'o1', 'ó': 'o2', 'ǒ': 'o3', 'ò': 'o4',
+    'ū': 'u1', 'ú': 'u2', 'ǔ': 'u3', 'ù': 'u4',
+    'ǖ': 'v1', 'ǘ': 'v2', 'ǚ': 'v3', 'ǜ': 'v4',
+    'ü': 'v',
+}
+
+
+def _diacritical_to_numbered(text: str) -> str:
+    """Convert diacritical pinyin (ái) to numbered (ai2).
+
+    Tone number is placed at the end of the syllable (after all vowels/consonants),
+    not immediately after the toned vowel.
+    """
+    result = []
+    tone = ''
+    for ch in text:
+        if ch in _TONE_MAP:
+            mapped = _TONE_MAP[ch]
+            if len(mapped) == 2:  # letter + tone number
+                result.append(mapped[0])
+                tone = mapped[1]
+            else:
+                result.append(mapped)
+        elif ch.isalpha():
+            result.append(ch)
+        else:
+            # Non-alpha boundary: flush pending tone
+            if tone:
+                result.append(tone)
+                tone = ''
+            result.append(ch)
+    if tone:
+        result.append(tone)
+    return ''.join(result)
+
+
 def extract_pinyin(text: str) -> str | None:
-    """Extract pinyin from generated text."""
-    # Common patterns: (pin1 yin1), [pin1 yin1], pinyin: pin1 yin1
+    """Extract pinyin from generated text.
+
+    Handles both numbered (ai2) and diacritical (ái) formats.
+    """
+    # Common patterns: numbered tones
     patterns = [
         r'\(([a-z]+\d[a-z\s\d]*)\)',  # (ai2)
         r'\[([a-z]+\d[a-z\s\d]*)\]',  # [ai2]
@@ -31,12 +98,32 @@ def extract_pinyin(text: str) -> str | None:
         m = re.search(pat, text)
         if m:
             return m.group(1).strip()
+
+    # Diacritical patterns: ái, cè shì, etc.
+    diacritical_chars = r'[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]'
+    diacritical_patterns = [
+        r'[Pp]inyin[:\s]*\*?\*?\s*(' + diacritical_chars + r'+(?:\s+' + diacritical_chars + r'+)*)',
+    ]
+    for pat in diacritical_patterns:
+        m = re.search(pat, text)
+        if m:
+            raw = m.group(1).strip()
+            return _diacritical_to_numbered(raw)
+
     return None
 
 
 def normalize_pinyin(pinyin: str) -> str:
-    """Normalize pinyin for comparison (lowercase, strip spaces/punctuation)."""
-    return re.sub(r'[^a-z0-9]', '', pinyin.lower())
+    """Normalize pinyin for comparison (lowercase, letters + tones only).
+
+    Compares just the letters (ignoring tone position):
+      'a2i' and 'ai2' both normalize to the same form.
+    """
+    clean = re.sub(r'[^a-z0-9]', '', pinyin.lower())
+    # Extract just the letters and just the digits separately
+    letters = re.sub(r'[^a-z]', '', clean)
+    tones = re.sub(r'[^0-9]', '', clean)
+    return letters + tones
 
 
 def score_pinyin_accuracy(generated: str, reference: str) -> float:
@@ -136,6 +223,9 @@ def score_entry(
     """Score a single generated dictionary entry against reference."""
     term = reference["term"]
 
+    # Strip thinking blocks (e.g. MiniMax M2.5 <think>...</think>)
+    generated = strip_thinking(generated)
+
     # 1. Pinyin accuracy
     pinyin_score = score_pinyin_accuracy(generated, reference.get("pinyin", ""))
 
@@ -174,7 +264,14 @@ def main(responses: str, references: str):
     conditions = ["baseline", "rag", "mcp"]
     results = {c: [] for c in conditions}
 
-    for resp, ref in zip(resp_data, ref_data):
+    # Match by term, not position
+    ref_by_term = {r["term"]: r for r in ref_data}
+
+    for resp in resp_data:
+        term = resp.get("term")
+        ref = ref_by_term.get(term)
+        if not ref:
+            continue
         for cond in conditions:
             key = f"response_{cond}"
             if key not in resp:
