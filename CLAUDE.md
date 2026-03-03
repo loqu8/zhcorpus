@@ -68,9 +68,15 @@ zhcorpus/
 │       └── server.py      # (Phase 2) MCP stdio server
 ├── tools/
 │   ├── import_corpus.py   # Import from cedict-backfill DB + CC-CEDICT
-│   └── download_news.py   # Download + import THUCNews/news2016zh
+│   ├── download_news.py   # Download + import THUCNews/news2016zh
+│   └── dictmaster/
+│       ├── build_master.py       # Orchestrator: parse → merge → translate → export
+│       ├── backfill_langs.py     # Context-aware backfill for missing languages
+│       └── translate/            # Translation backends (minimax, groq, ollama)
 ├── docs/
-│   └── corpus-import-plan.md  # Data sources, sizes, download log
+│   ├── corpus-import-plan.md         # Data sources, sizes, download log
+│   ├── translation-model-eval.md     # LLM model comparison for translation
+│   └── translation-backfill-plan.md  # Backfill strategy and results
 ├── tests/
 │   ├── fixtures/
 │   │   └── sample_corpus.py     # Hand-picked Chinese text fixtures
