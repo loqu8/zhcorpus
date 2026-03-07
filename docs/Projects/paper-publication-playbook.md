@@ -184,18 +184,17 @@ No CV, ORCID, or bio needed in the paper. ARR submission form may ask for ORCID 
 
 In the `.tex` file, keep `\author{Anonymous}` for review. Comment out the real author block and uncomment it for camera-ready.
 
-## Account Setup (ORCID + OpenReview)
+## Account Setup
 
-Both accounts are required before ARR submission. Set these up early — OpenReview activation can take up to 2 weeks for non-institutional emails.
+All accounts are required or strongly recommended before ARR submission. Set these up early — some take days to activate. All use name "E. Timothy Uy" and affiliation "Loqu8, Inc."
 
-### ORCID (orcid.org)
-- **ID**: 0009-0008-8717-2249
-- Register at [orcid.org/register](https://orcid.org/register)
+### ORCID (orcid.org) — DONE
+- **ID**: [0009-0008-8717-2249](https://orcid.org/0009-0008-8717-2249)
+- Email verified, profile public
 - Fill in: Employment, Education, Keywords (research interests)
 - Small companies like "Loqu8" will show as "Unidentified organization" — this is normal, the name still saves
-- Instant activation
 
-### OpenReview (openreview.net)
+### OpenReview (openreview.net) — PENDING ACTIVATION
 - Register at [openreview.net/signup](https://openreview.net/signup)
 - **Non-institutional emails** (e.g., @loqu8.com) may require manual activation — allow up to 2 weeks
 - The "Complete Registration" form has 6 sections: Names, Personal Info, Emails, Personal Links, History, Expertise
@@ -204,7 +203,24 @@ Both accounts are required before ARR submission. Set these up early — OpenRev
 - Link your ORCID in the Personal Links section
 - Add Homepage URL for institutional credibility
 
-### ARR Reviewer Signup
+### Semantic Scholar (semanticscholar.org) — CLAIM PENDING
+- **Author page**: [semanticscholar.org/author/E.-Uy/143861946](https://www.semanticscholar.org/author/E.-Uy/143861946)
+- Pre-existing profile from Stanford publications (8 papers, 84 citations, h-index 3)
+- Account created and author page claimed — moderation takes 4-5 business days
+- **Gotcha**: Verification email goes to SPAM — check spam folder
+- Used by OpenReview for author matching and conflict-of-interest detection
+
+### Google Scholar — DONE
+- **Profile**: [scholar.google.com/citations?user=5kBACPUAAAAJ](https://scholar.google.com/citations?user=5kBACPUAAAAJ)
+- 8 publications, 107 citations, public profile
+- Auto-updates enabled, citation alerts on
+- **Gotcha**: Google Scholar suggests "Timothy Uy" economics papers (different person) — only select "E Timothy Uy" groups
+
+### ACL Membership (aclweb.org) — TODO
+- Not required for ARR submission, but needed for EMNLP 2026 attendance at member rates
+- ~$100/year for professionals
+
+### ARR Reviewer Signup — TODO (after OpenReview activation)
 - Since May 2025, all ARR authors must also register as reviewers
 - Do this once OpenReview account is active, before paper submission
 
