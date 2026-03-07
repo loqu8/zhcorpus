@@ -12,13 +12,14 @@ import time
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 
+from zhcorpus import __version__ as _VERSION
+
 from .server import (
     _get_corpus_conn,
     _get_dict_conn,
     _query_definitions,
     _query_dialect_forms,
     _server_start_time,
-    _VERSION,
 )
 
 
