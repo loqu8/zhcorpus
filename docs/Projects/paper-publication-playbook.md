@@ -48,9 +48,22 @@ Key lesson: Papers get WORSE after too many reviewer passes (bloated limitations
 1. Clone ACL style files: `git clone https://github.com/acl-org/acl-style-files.git`
 2. Convert `draft.md` → `.tex` using LuaLaTeX template (for CJK support)
 3. Create `references.bib` with proper BibTeX entries + DOIs
-4. Upload to Overleaf → compile → iterate
+4. Compile locally or upload to Overleaf
 
-### Phase 4: Overleaf Setup
+### Phase 4: Compile
+
+**Local (preferred — no account needed):**
+```bash
+# Requires: sudo apt install texlive-full fonts-noto-cjk
+cd docs/Projects/paper-X/
+cp acl-style-files/acl.sty acl-style-files/acl_natbib.bst .
+lualatex -interaction=nonstopmode paper.tex
+bibtex paper
+lualatex -interaction=nonstopmode paper.tex
+lualatex -interaction=nonstopmode paper.tex
+```
+
+**Overleaf (alternative — browser-based GUI):**
 1. Go to [overleaf.com](https://www.overleaf.com), create account
 2. New Project → Upload Project (or blank + upload files)
 3. Upload: `.tex`, `.bib`, `acl.sty`, `acl_natbib.bst`
@@ -144,6 +157,32 @@ sudo apt install texlive-full fonts-noto-cjk
 | NAACL 2026 | ARR cycle | Apr/May 2026 | TBD |
 | LREV (journal) | Rolling | N/A | Online |
 | COLM 2026 | TBD | TBD | TBD |
+
+## AI Assistance Disclosure
+
+EMNLP/ACL policy: AI writing assistance is permitted but must be disclosed. "Entirely AI-generated papers" without human intellectual contribution are prohibited and may result in desk rejection + multi-year ban.
+
+**What to disclose in Acknowledgments (camera-ready only):**
+- AI tools used for code development, data analysis, manuscript drafting
+- Which AI generated the research artifacts (e.g., MiniMax for definitions)
+- Clear statement that the author is responsible for all research decisions and claims
+
+**Template:**
+> Claude (Anthropic) was used extensively as a development partner throughout this project: writing and debugging pipeline code, iterating on prompt engineering, performing data analysis, and assisting with manuscript preparation. [Model X] generated [artifacts] as described in Section N. The author is solely responsible for all research decisions, claims, and errors.
+
+**Important:** Acknowledgments are OMITTED in the review version (double-blind). Only add them in the camera-ready after acceptance.
+
+## Author Block
+
+For ACL papers, the author block is minimal:
+- Full name (not initials): E. Timothy Uy
+- Affiliation: Loqu8, Inc.
+- Location: Bellingham, WA, USA
+- Email: tim@loqu8.com
+
+No CV, ORCID, or bio needed in the paper. ARR submission form may ask for ORCID optionally — get one free at [orcid.org](https://orcid.org).
+
+In the `.tex` file, keep `\author{Anonymous}` for review. Comment out the real author block and uncomment it for camera-ready.
 
 ## Common Pitfalls
 
