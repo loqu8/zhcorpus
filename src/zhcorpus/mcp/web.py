@@ -34,87 +34,236 @@ def _dashboard_html() -> str:
 <title>zhcorpus — Chinese Corpus Search</title>
 <style>
   :root {
-    --bg: #0d1117; --surface: #161b22; --border: #30363d;
-    --text: #e6edf3; --text-muted: #8b949e; --accent: #58a6ff;
-    --accent-dim: #1f6feb; --green: #3fb950; --red: #f85149;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    --crimson: #A50A17;
+    --crimson-dim: rgba(165, 10, 23, 0.12);
+    --steel-blue: #396A92;
+    --surface: #FAFAFA;
+    --dark: #1A1A1A;
+    --dark-2: #2a2a2a;
+    --grey: #666;
+    --grey-light: #999;
+    --border: #e5e5e5;
+    --white: #ffffff;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    --cjk: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font); line-height: 1.5; }
-  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+  body { background: var(--surface); color: var(--dark); font-family: var(--font); line-height: 1.6; }
 
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-  header h1 { font-size: 20px; font-weight: 600; }
-  header .badge { background: var(--accent-dim); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
-
-  .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
-  .stat-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .stat-card .value { font-size: 24px; font-weight: 600; color: var(--accent); }
-
-  .search-box { margin-bottom: 24px; }
-  .search-box input {
-    width: 100%; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-size: 16px; font-family: var(--font);
+  /* Header */
+  header {
+    background: var(--dark);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
-  .search-box input:focus { outline: none; border-color: var(--accent); }
-  .search-box input::placeholder { color: var(--text-muted); }
+  header .left { display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  header .badge {
+    font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  header .badge-mcp { background: var(--crimson); color: white; }
+  header .badge-uptime { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); }
+  header .badge-uptime.ok { background: rgba(59,130,246,0.2); color: #93c5fd; }
+  header nav a {
+    color: rgba(255,255,255,0.7); text-decoration: none;
+    margin-left: 1.5rem; font-size: 0.9rem;
+  }
+  header nav a:hover { color: white; }
 
-  .tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
-  .tab { padding: 8px 16px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; font-size: 14px; }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  /* Hero stats bar */
+  .hero-stats {
+    background: linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+  }
+  .hero-stats h2 {
+    color: white; font-size: 1.75rem; font-weight: 700;
+    letter-spacing: -0.03em; margin-bottom: 0.5rem;
+  }
+  .hero-stats h2 .chinese { color: var(--crimson); font-weight: 400; }
+  .hero-stats .subtitle {
+    color: rgba(255,255,255,0.5); font-size: 0.95rem; margin-bottom: 2rem;
+  }
+  .stats-grid {
+    display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+    max-width: 900px; margin: 0 auto;
+  }
+  .stat {
+    text-align: center; min-width: 120px;
+  }
+  .stat .number {
+    font-size: 2rem; font-weight: 700; color: white;
+    letter-spacing: -0.02em; line-height: 1.2;
+  }
+  .stat .label {
+    font-size: 0.75rem; color: rgba(255,255,255,0.45);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem;
+  }
+
+  /* Main content */
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 2rem 3rem; }
+
+  /* Search */
+  .search-box { margin-bottom: 1.5rem; position: relative; }
+  .search-box input {
+    width: 100%; padding: 14px 20px; background: var(--white);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--dark); font-size: 1.1rem; font-family: var(--font);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-box input:focus {
+    outline: none; border-color: var(--crimson);
+    box-shadow: 0 0 0 3px var(--crimson-dim);
+  }
+  .search-box input::placeholder { color: var(--grey-light); }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 20px; cursor: pointer; color: var(--grey);
+    border-bottom: 2px solid transparent; font-size: 0.95rem;
+    font-weight: 500; transition: color 0.15s;
+  }
+  .tab:hover { color: var(--dark); }
+  .tab.active { color: var(--crimson); border-bottom-color: var(--crimson); }
 
   .panel { display: none; }
   .panel.active { display: block; }
 
-  .results { margin-top: 16px; }
-  .result-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
-  .result-item .meta { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-  .result-item .meta .source { color: var(--accent); font-weight: 600; }
-  .result-item .text { font-size: 15px; line-height: 1.7; }
-  .result-item .text .cjk { font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  /* Results */
+  .results { margin-top: 8px; }
+  .result-item {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px;
+    transition: box-shadow 0.15s;
+  }
+  .result-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .result-item .meta {
+    font-size: 0.8rem; color: var(--grey-light); margin-bottom: 6px;
+  }
+  .result-item .meta .source {
+    color: var(--crimson); font-weight: 600; text-transform: uppercase;
+    font-size: 0.7rem; letter-spacing: 0.03em;
+  }
+  .result-item .text {
+    font-size: 1rem; line-height: 1.8; color: var(--dark);
+    font-family: var(--cjk);
+  }
 
-  .report-section { margin-bottom: 20px; }
-  .report-section h3 { font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  /* Report sections */
+  .report-section { margin-bottom: 24px; }
+  .report-section h3 {
+    font-size: 0.8rem; color: var(--grey); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 10px; font-weight: 600;
+  }
 
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
-  th { color: var(--text-muted); font-weight: 500; }
+  th, td {
+    text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); font-size: 0.95rem;
+  }
+  th { color: var(--grey); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td { color: var(--dark); }
 
   .def-list { list-style: none; }
-  .def-list li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
-  .def-list .lang-tag { display: inline-block; background: var(--accent-dim); color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 11px; margin-right: 6px; }
-  .def-list .source-tag { color: var(--text-muted); font-size: 12px; }
+  .def-list li {
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 0.95rem; color: var(--dark);
+  }
+  .def-list li:last-child { border-bottom: none; }
+  .def-list .lang-tag {
+    display: inline-block; background: var(--crimson); color: #fff;
+    padding: 1px 7px; border-radius: 4px; font-size: 0.7rem;
+    margin-right: 8px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .def-list .source-tag { color: var(--grey-light); font-size: 0.8rem; }
 
-  .dialect-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; }
-  .dialect-card .dialect-name { font-weight: 600; color: var(--green); }
-  .dialect-card .pronunciation { font-family: var(--mono); font-size: 15px; }
+  .dict-heading {
+    font-size: 1.25rem; font-weight: 600; margin: 20px 0 8px;
+    color: var(--dark); letter-spacing: -0.01em;
+  }
+  .dict-heading:first-child { margin-top: 0; }
+  .dict-heading .pinyin { color: var(--steel-blue); font-weight: 400; }
+  .dict-heading .pos { color: var(--grey-light); font-weight: 400; font-size: 0.9rem; }
 
-  .loading { color: var(--text-muted); font-style: italic; }
-  .error { color: var(--red); }
+  /* Dialect cards */
+  .dialect-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 10px;
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  }
+  .dialect-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .dialect-name {
+    font-weight: 600; color: var(--crimson);
+    font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.03em; min-width: 80px;
+  }
+  .pronunciation {
+    font-family: var(--mono); font-size: 1.05rem; color: var(--dark);
+    font-weight: 500;
+  }
+  .dialect-chars { color: var(--steel-blue); font-family: var(--cjk); }
+  .dialect-gloss { color: var(--grey); font-size: 0.9rem; }
 
-  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align: center; }
-  .footer a { color: var(--accent); text-decoration: none; }
+  .loading { color: var(--grey-light); font-style: italic; padding: 20px 0; }
+  .error { color: var(--crimson); padding: 20px 0; }
+
+  /* Footer */
+  footer {
+    text-align: center; padding: 1.5rem 2rem; font-size: 0.85rem;
+    color: var(--grey); border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+  footer a { color: var(--steel-blue); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .hero-stats h2 { font-size: 1.3rem; }
+    .stats-grid { gap: 1rem; }
+    .stat .number { font-size: 1.5rem; }
+    .tab { padding: 8px 12px; font-size: 0.85rem; }
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
+
+<header>
+  <div class="left">
     <h1>zhcorpus</h1>
-    <span class="badge">MCP Server</span>
-    <span class="badge" id="uptime-badge" style="background: var(--green);">loading...</span>
-  </header>
-
-  <div class="stats-bar" id="stats-bar">
-    <div class="stat-card"><div class="label">Articles</div><div class="value" id="stat-articles">—</div></div>
-    <div class="stat-card"><div class="label">Chunks</div><div class="value" id="stat-chunks">—</div></div>
-    <div class="stat-card"><div class="label">Headwords</div><div class="value" id="stat-headwords">—</div></div>
-    <div class="stat-card"><div class="label">Definitions</div><div class="value" id="stat-definitions">—</div></div>
-    <div class="stat-card"><div class="label">Dialect Forms</div><div class="value" id="stat-dialects">—</div></div>
+    <span class="badge badge-mcp">MCP Server</span>
+    <span class="badge badge-uptime" id="uptime-badge">connecting...</span>
   </div>
+  <nav>
+    <a href="/sse">SSE</a>
+    <a href="/mcp">HTTP</a>
+  </nav>
+</header>
 
+<div class="hero-stats">
+  <h2>Chinese Corpus <span class="chinese">中文语料库</span></h2>
+  <div class="subtitle">Multi-source evidence engine for Chinese lexicography</div>
+  <div class="stats-grid">
+    <div class="stat"><div class="number" id="stat-articles">—</div><div class="label">Articles</div></div>
+    <div class="stat"><div class="number" id="stat-chunks">—</div><div class="label">Chunks</div></div>
+    <div class="stat"><div class="number" id="stat-headwords">—</div><div class="label">Headwords</div></div>
+    <div class="stat"><div class="number" id="stat-definitions">—</div><div class="label">Definitions</div></div>
+    <div class="stat"><div class="number" id="stat-dialects">—</div><div class="label">Dialect Forms</div></div>
+  </div>
+</div>
+
+<div class="container">
   <div class="search-box">
     <input type="text" id="search-input" placeholder="Search Chinese corpus... (e.g. 银行, 营商环境, 画蛇添足)" autofocus>
   </div>
@@ -138,13 +287,12 @@ def _dashboard_html() -> str:
   <div id="panel-dialects" class="panel">
     <div id="dialect-results"></div>
   </div>
-
-  <div class="footer">
-    zhcorpus v""" + _VERSION + """ — Chinese corpus MCP search engine
-    · <a href="/sse">SSE endpoint</a>
-    · <a href="/mcp">Streamable HTTP</a>
-  </div>
 </div>
+
+<footer>
+  zhcorpus v""" + _VERSION + """ · Chinese corpus MCP search engine
+  · <a href="https://loqu8.com">Loqu8</a>
+</footer>
 
 <script>
 const $ = s => document.querySelector(s);
@@ -161,9 +309,7 @@ $$('.tab').forEach(tab => {
   });
 });
 
-function activeTab() {
-  return $('.tab.active').dataset.tab;
-}
+function activeTab() { return $('.tab.active').dataset.tab; }
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
@@ -176,7 +322,6 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
-// Load stats on page load
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
@@ -197,14 +342,17 @@ async function loadServerStats() {
   try {
     const res = await fetch('/api/server_stats');
     const data = await res.json();
-    $('#uptime-badge').textContent = data.uptime || 'connected';
+    const badge = $('#uptime-badge');
+    badge.textContent = 'up ' + (data.uptime || '?');
+    badge.classList.add('ok');
   } catch(e) {
-    $('#uptime-badge').textContent = 'disconnected';
-    $('#uptime-badge').style.background = 'var(--red)';
+    const badge = $('#uptime-badge');
+    badge.textContent = 'offline';
+    badge.style.background = 'rgba(165,10,23,0.3)';
+    badge.style.color = '#fca5a5';
   }
 }
 
-// Search
 let searchTimeout;
 $('#search-input').addEventListener('input', () => {
   clearTimeout(searchTimeout);
@@ -234,9 +382,9 @@ async function searchCorpus(q) {
       el.innerHTML = '<div class="loading">No results found.</div>';
       return;
     }
-    el.innerHTML = data.results.map((r, i) =>
+    el.innerHTML = data.results.map(r =>
       `<div class="result-item">
-        <div class="meta"><span class="source">${escHtml(r.source)}</span> · ${escHtml(r.title)} · rank: ${r.rank.toFixed(2)}</div>
+        <div class="meta"><span class="source">${escHtml(r.source)}</span> · ${escHtml(r.title)}</div>
         <div class="text">${escHtml(r.snippet)}</div>
       </div>`
     ).join('');
@@ -251,29 +399,26 @@ async function wordReport(q) {
     const data = await res.json();
     let html = '';
 
-    // Definitions
     if (data.definitions && data.definitions.length > 0) {
       html += '<div class="report-section"><h3>Dictionary Definitions</h3><ul class="def-list">';
       data.definitions.forEach(d => {
-        html += `<li><span class="lang-tag">${escHtml(d.lang)}</span>${escHtml(d.definition)} <span class="source-tag">(${escHtml(d.source)})</span></li>`;
+        html += `<li><span class="lang-tag">${escHtml(d.lang)}</span>${escHtml(d.definition)} <span class="source-tag">${escHtml(d.source)}</span></li>`;
       });
       html += '</ul></div>';
     }
 
-    // Dialect forms
     if (data.dialects && data.dialects.length > 0) {
       html += '<div class="report-section"><h3>Dialect Forms</h3>';
       data.dialects.forEach(d => {
         const name = d.dialect === 'yue' ? 'Cantonese' : 'Hokkien';
-        const chars = d.native_chars ? ` (${escHtml(d.native_chars)})` : '';
-        const gloss = d.gloss ? ` — ${escHtml(d.gloss)}` : '';
-        html += `<div class="dialect-card"><span class="dialect-name">${name}</span>: <span class="pronunciation">${escHtml(d.pronunciation)}</span>${chars}${gloss} <span class="source-tag">(${escHtml(d.source)})</span></div>`;
+        const chars = d.native_chars ? `<span class="dialect-chars">${escHtml(d.native_chars)}</span>` : '';
+        const gloss = d.gloss ? `<span class="dialect-gloss"> — ${escHtml(d.gloss)}</span>` : '';
+        html += `<div class="dialect-card"><span class="dialect-name">${name}</span><span class="pronunciation">${escHtml(d.pronunciation)}</span>${chars}${gloss}</div>`;
       });
       html += '</div>';
     }
 
-    // Corpus evidence
-    html += `<div class="report-section"><h3>Corpus Evidence (${fmt(data.total_hits)} hits)</h3>`;
+    html += `<div class="report-section"><h3>Corpus Evidence — ${fmt(data.total_hits)} hits</h3>`;
     if (data.sources && data.sources.length > 0) {
       html += '<table><tr><th>Source</th><th>Hits</th></tr>';
       data.sources.forEach(s => { html += `<tr><td>${escHtml(s.name)}</td><td>${fmt(s.hit_count)}</td></tr>`; });
@@ -281,10 +426,9 @@ async function wordReport(q) {
     }
     html += '</div>';
 
-    // Best examples
     if (data.examples && data.examples.length > 0) {
       html += '<div class="report-section"><h3>Best Examples</h3>';
-      data.examples.forEach((ex, i) => {
+      data.examples.forEach(ex => {
         html += `<div class="result-item"><div class="meta"><span class="source">${escHtml(ex.source)}</span> · ${escHtml(ex.title)}</div><div class="text">${escHtml(ex.text)}</div></div>`;
       });
       html += '</div>';
@@ -306,13 +450,12 @@ async function lookupWord(q) {
     }
     let html = '';
     data.headwords.forEach(hw => {
-      const pos = hw.pos ? ` [${escHtml(hw.pos)}]` : '';
-      html += `<h3>${escHtml(hw.traditional)} / ${escHtml(hw.simplified)} (${escHtml(hw.pinyin)})${pos}</h3>`;
+      const pos = hw.pos ? `<span class="pos"> ${escHtml(hw.pos)}</span>` : '';
+      html += `<div class="dict-heading">${escHtml(hw.traditional)} / ${escHtml(hw.simplified)} <span class="pinyin">${escHtml(hw.pinyin)}</span>${pos}</div>`;
       if (hw.definitions && hw.definitions.length > 0) {
         html += '<ul class="def-list">';
         hw.definitions.forEach(d => {
-          const conf = d.confidence ? ` [${escHtml(d.confidence)}]` : '';
-          html += `<li><span class="lang-tag">${escHtml(d.lang)}</span>${escHtml(d.definition)} <span class="source-tag">(${escHtml(d.source)})${conf}</span></li>`;
+          html += `<li><span class="lang-tag">${escHtml(d.lang)}</span>${escHtml(d.definition)} <span class="source-tag">${escHtml(d.source)}</span></li>`;
         });
         html += '</ul>';
       }
@@ -334,15 +477,14 @@ async function dialectForms(q) {
     let html = '';
     data.forms.forEach(f => {
       const name = f.dialect === 'yue' ? 'Cantonese' : 'Hokkien';
-      const chars = f.native_chars ? ` — characters: ${escHtml(f.native_chars)}` : '';
-      const gloss = f.gloss ? ` — ${escHtml(f.gloss)}` : '';
-      html += `<div class="dialect-card"><span class="dialect-name">${name}</span>: <span class="pronunciation">${escHtml(f.pronunciation)}</span>${chars}${gloss} <span class="source-tag">(${escHtml(f.source)})</span></div>`;
+      const chars = f.native_chars ? `<span class="dialect-chars">${escHtml(f.native_chars)}</span>` : '';
+      const gloss = f.gloss ? `<span class="dialect-gloss"> — ${escHtml(f.gloss)}</span>` : '';
+      html += `<div class="dialect-card"><span class="dialect-name">${name}</span><span class="pronunciation">${escHtml(f.pronunciation)}</span>${chars}${gloss}</div>`;
     });
     el.innerHTML = html;
   } catch(e) { el.innerHTML = `<div class="error">Error: ${e.message}</div>`; }
 }
 
-// Init
 loadStats();
 loadServerStats();
 setInterval(loadServerStats, 60000);
