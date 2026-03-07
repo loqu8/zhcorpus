@@ -7,9 +7,9 @@ The same open-weight model produces dramatically different output depending on t
 
 ### Direct Prior Art (Emerging Topic)
 - **Simon Willison blog (Aug 2025)**: "Open weight LLMs exhibit inconsistent performance across providers" — first widely-read treatment of this issue. Anecdotal evidence, no systematic study. Significant community discussion.
-- **arXiv 2511.02620**: "Verifying LLM Inference" — proposes methods to verify that providers are actually running the claimed model. Addresses trust/verification, not output quality divergence.
+- **Rinberg, Karvonen et al., arXiv 2511.02620**: "Verifying LLM Inference to Detect Model Weight Exfiltration" (Nov 2025) — proposes methods to verify that providers are running the claimed model weights. Primary framing is detecting steganographic weight exfiltration, not output quality divergence.
 - **Together AI blog**: "Same model, different results" — acknowledges the problem from a provider perspective. Explains quantization, batching, and serving differences. Marketing-adjacent.
-- **NAACL 2025 paper**: "Inference acceleration introduces systematic bias in LLM outputs" — studies how vLLM/TGI optimizations (continuous batching, speculative decoding) affect output distributions. Closest academic work but focuses on acceleration techniques, not cross-provider comparison.
+- **Kirsten et al., NAACL 2025**: "The Impact of Inference Acceleration on Bias of LLMs" (NAACL 2025 Long Papers, pp. 1834-1853) — studies how quantization and acceleration change model bias in complex, unpredictable ways. Closest academic work but focuses on acceleration techniques, not cross-provider comparison.
 
 ### Quantization Effects
 - Large literature on quantization effects on LLM performance (GPTQ, AWQ, GGUF).

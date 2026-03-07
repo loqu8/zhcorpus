@@ -6,7 +6,7 @@ Open-source dialect dictionaries (CC-Canto, iTaigi, TaiHua) can be unified into 
 ## Closest Related Work
 
 ### Cantonese NLP Resources
-- **words.hk** (ACL 2022): Comprehensive Cantonese dictionary project. Community-built, ~90K entries with Jyutping, definitions, example sentences. Published at ACL System Demonstrations. Directly relevant — established resource we build upon (CC-Canto uses similar data).
+- **words.hk** (DCLRL Workshop at LREC 2022): Comprehensive Cantonese dictionary dataset. Community-built, ~90K entries with Jyutping, definitions, example sentences. Published at the Dataset Creation for Lower-Resourced Languages workshop. Directly relevant — established resource we build upon (CC-Canto uses similar data).
 - **YueTung-7b** (2024): Cantonese language model fine-tuned from Llama. Shows growing interest in Cantonese NLP.
 - **PyCantonese**: Python library for Cantonese corpus linguistics. Analysis tool, not dictionary.
 
