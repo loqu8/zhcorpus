@@ -216,9 +216,19 @@ All accounts are required or strongly recommended before ARR submission. Set the
 - Auto-updates enabled, citation alerts on
 - **Gotcha**: Google Scholar suggests "Timothy Uy" economics papers (different person) — only select "E Timothy Uy" groups
 
-### ACL Membership (aclweb.org) — TODO
-- Not required for ARR submission, but needed for EMNLP 2026 attendance at member rates
-- ~$100/year for professionals
+### arXiv (arxiv.org) — DONE
+- **Username**: etimothyuy
+- **Default category**: cs.CL (Computation and Language)
+- **ORCID linked**: 0009-0008-8717-2249
+- Email verified, account active
+- **Endorsement**: First-time cs.CL submitters need endorsement from an existing arXiv author. Request endorsement before first submission — may take days.
+- **Gotcha**: Password policy is restrictive — letters, digits, and underscores ONLY (no special characters like !@#)
+- **Gotcha**: Country/Status/Category fields are combobox widgets (same pattern as OpenReview)
+
+### ACL Membership (aclweb.org) — OPTIONAL
+- NOT required for submission or publication
+- Only benefit: ~$200 discount on conference registration if attending in person
+- ~$100/year — only worth it if you attend EMNLP/ACL in person
 
 ### ARR Reviewer Signup — TODO (after OpenReview activation)
 - Since May 2025, all ARR authors must also register as reviewers
