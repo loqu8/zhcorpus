@@ -26,6 +26,10 @@
 \babelprovide[import]{arabic}
 \babelfont[*arabic]{rm}{Noto Sans Arabic}
 
+% Thai script (for loanword examples)
+\babelprovide[import]{thai}
+\babelfont[*thai]{rm}{Noto Sans Thai}
+
 % Verbatim environments for prompts
 \usepackage{fancyvrb}
 \usepackage{listings}
@@ -325,7 +329,7 @@ To validate the dictionary's practical utility, we built a language pack generat
 
 \textbf{Pivot translation bias as a window into LLM representations.} A controlled experiment comparing pivot-translated glosses against direct translations across typologically diverse languages would test whether LLMs reproduce English sense boundaries or restructure senses from their multilingual training.
 
-\textbf{Computational loanword detection across the Sinosphere.} The dictionary now contains both Hokkien source forms and Southeast Asian target languages---infrastructure for tracing lexical diffusion at scale. Linking Hokkien \textit{tāu-hū} to Indonesian \textit{tahu}, Tagalog \textit{taho}, and Thai เต้าหู้ would produce a machine-readable atlas of Chinese vocabulary diffusion across maritime Southeast Asia \citep{chanyap1980}.
+\textbf{Computational loanword detection across the Sinosphere.} The dictionary now contains both Hokkien source forms and Southeast Asian target languages---infrastructure for tracing lexical diffusion at scale. Linking Hokkien \textit{tāu-hū} to Indonesian \textit{tahu}, Tagalog \textit{taho}, and Thai \foreignlanguage{thai}{เต้าหู้} would produce a machine-readable atlas of Chinese vocabulary diffusion across maritime Southeast Asia \citep{chanyap1980}.
 
 \textbf{Under-resourced and endangered languages.} The {\raise.17ex\hbox{$\scriptstyle\sim$}}\$100 cost makes the pipeline relevant for languages without institutional support for manual lexicography. Within China alone, Zhuang (16M speakers), Tibetan (6M), Uyghur (10M), and Yi (7.8M) lack comprehensive bilingual dictionaries.
 
