@@ -184,6 +184,30 @@ No CV, ORCID, or bio needed in the paper. ARR submission form may ask for ORCID 
 
 In the `.tex` file, keep `\author{Anonymous}` for review. Comment out the real author block and uncomment it for camera-ready.
 
+## Account Setup (ORCID + OpenReview)
+
+Both accounts are required before ARR submission. Set these up early — OpenReview activation can take up to 2 weeks for non-institutional emails.
+
+### ORCID (orcid.org)
+- **ID**: 0009-0008-8717-2249
+- Register at [orcid.org/register](https://orcid.org/register)
+- Fill in: Employment, Education, Keywords (research interests)
+- Small companies like "Loqu8" will show as "Unidentified organization" — this is normal, the name still saves
+- Instant activation
+
+### OpenReview (openreview.net)
+- Register at [openreview.net/signup](https://openreview.net/signup)
+- **Non-institutional emails** (e.g., @loqu8.com) may require manual activation — allow up to 2 weeks
+- The "Complete Registration" form has 6 sections: Names, Personal Info, Emails, Personal Links, History, Expertise
+- **History section gotcha**: Position, Country/Region, and Institution Domain fields are **combobox/autocomplete widgets**, not plain text. You must click to open the dropdown, then either select a predefined option or type a custom value and select it from the filtered list. Plain `fill()` won't register with form validation.
+- Predefined Position options: Undergrad student, MS student, PhD student, Postdoc, Instructor, Lecturer, Assistant/Associate/Full Professor, Emeritus, Researcher, Principal Researcher, Intern. Custom values (like "CEO") can be typed and will appear as a selectable option.
+- Link your ORCID in the Personal Links section
+- Add Homepage URL for institutional credibility
+
+### ARR Reviewer Signup
+- Since May 2025, all ARR authors must also register as reviewers
+- Do this once OpenReview account is active, before paper submission
+
 ## Common Pitfalls
 
 1. **Over-revision bloat**: After 3+ reviewer passes, Limitations grows longer than Results. Fix with a final buddy pass that cuts ruthlessly.
