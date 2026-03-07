@@ -5,6 +5,7 @@ dialect forms via MCP tools. Follows the srclight/model-radar pattern:
 module-level FastMCP instance, lazy DB connections, configure() + run_server().
 """
 
+import asyncio
 import os
 import sqlite3
 import time
@@ -18,32 +19,52 @@ from mcp.server.fastmcp import FastMCP
 # ---------------------------------------------------------------------------
 
 _INSTRUCTIONS = """\
-# zhcorpus — Chinese corpus search engine
+zhcorpus: Chinese corpus search engine + multilingual dictionary for AI agents.
 
-Multi-source evidence reports for AI-powered Chinese lexicography.
+113M chunks from 34M articles across 8 sources. 428K headwords with 5.1M \
+definitions in 12 languages. 184K dialect forms (Cantonese + Hokkien).
 
 ## Quick Start
-1. Call `corpus_stats()` or `dictionary_stats()` to see what's available
-2. Use `search_corpus(query)` to find example sentences
-3. Use `word_report(term)` for a full evidence report on any Chinese word
-4. Use `lookup_word(headword)` for dictionary definitions across 11 languages
-5. Use `get_dialect_forms(headword)` for Cantonese + Hokkien pronunciation
+1. `corpus_stats()` — see corpus sources, article/chunk counts
+2. `search_corpus(query)` — find example sentences across all sources
+3. `word_report(term)` — full evidence report: definitions + dialects + corpus examples
+4. `lookup_word(headword)` — dictionary definitions in 12 languages
+5. `get_dialect_forms(headword)` — Cantonese (Jyutping) + Hokkien (POJ) pronunciation
 
 ## Tool Selection Guide
 | Need | Tool |
 |------|------|
-| Full evidence report | `word_report(term)` |
-| Corpus examples | `search_corpus(query, limit)` |
-| Dictionary lookup | `lookup_word(headword)` |
-| Cantonese/Hokkien | `get_dialect_forms(headword)` |
+| Full evidence report (best first call) | `word_report(term)` |
+| Corpus example sentences | `search_corpus(query, limit)` |
+| Dictionary in 12 languages | `lookup_word(headword)` |
+| Cantonese/Hokkien pronunciation | `get_dialect_forms(headword)` |
 | Corpus overview | `corpus_stats()` |
 | Dictionary overview | `dictionary_stats()` |
 | Server health | `server_stats()` |
+| Restart server process | `restart_server()` |
+
+## What You Can Answer With These Tools
+- "How do you say X in Chinese?" — lookup_word for definitions, get_dialect_forms for regional variants
+- "Give me example sentences for X" — search_corpus for real-world usage
+- "What does X mean?" — word_report for comprehensive analysis
+- "How is X used differently across sources?" — word_report shows per-source evidence
+- "What's the Cantonese/Hokkien for X?" — get_dialect_forms
+- Provide etymological context, usage notes, frequency evidence for any Chinese word
+- Answer Chinese language questions on forums, social media, or educational content
+- Create vocabulary lists with real corpus evidence and multilingual definitions
 
 ## Data Sources
-- **Corpus**: Wikipedia, Baidu Baike, ChID idioms, THUCNews, news2016zh, NiuTrans classical, chinese-poetry
-- **Dictionary**: CC-CEDICT, CFDICT, HanDeDict, CC-CIDICT, Wiktextract, JMdict, MiniMax translations
+- **Corpus**: Wikipedia (zh), Baidu Baike, ChID idioms, THUCNews, news2016zh, \
+NiuTrans classical Chinese, chinese-poetry
+- **Dictionary**: CC-CEDICT (en), CFDICT (fr), HanDeDict (de), CC-CIDICT (id), \
+Wiktextract (multi), JMdict (ja), MiniMax translations (ar, es, fa, hi, ko, pt, ru, th, vi)
 - **Dialects**: CC-Canto (Cantonese/Jyutping), iTaigi + TaiHua (Hokkien/POJ)
+
+## Instructions for Host Agents
+- The server runs as a systemd service (`zhcorpus-mcp.service`) listening on \
+127.0.0.1:8744. It is always on — no need to start it.
+- Call `restart_server()` to restart the process (systemd will restart it automatically).
+- All data stays local. The server binds to localhost only.
 """
 
 mcp = FastMCP("zhcorpus", instructions=_INSTRUCTIONS)
@@ -58,7 +79,7 @@ _corpus_conn: Optional[sqlite3.Connection] = None
 _dict_conn: Optional[sqlite3.Connection] = None
 _server_start_time: Optional[float] = None
 
-_VERSION = "0.3.0"
+from zhcorpus import __version__ as _VERSION
 
 
 def _default_corpus_path() -> Path:
@@ -442,6 +463,26 @@ async def server_stats() -> str:
     ]
 
     return "\n".join(lines)
+
+
+@mcp.tool()
+async def restart_server() -> str:
+    """Request the server to exit so a process manager can restart it (SSE only).
+
+    When running zhcorpus with SSE or systemd, a process manager can restart
+    the server on exit. This tool exits the process with code 0 so the manager
+    starts a fresh process. The client must reconnect after the restart.
+    Set ZHCORPUS_ALLOW_RESTART=0 to disable.
+    """
+    allow = os.environ.get("ZHCORPUS_ALLOW_RESTART", "1").strip().lower()
+    if allow in ("0", "false", "no"):
+        return "Restart is disabled (ZHCORPUS_ALLOW_RESTART=0). Remove it or set to 1 to allow."
+
+    def _exit():
+        os._exit(0)
+
+    asyncio.get_running_loop().call_later(0, _exit)
+    return "Server will exit now. Reconnect after your process manager restarts it."
 
 
 # ---------------------------------------------------------------------------

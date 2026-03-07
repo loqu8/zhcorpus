@@ -17,6 +17,7 @@ from zhcorpus.mcp.server import (
     dictionary_stats,
     get_dialect_forms,
     lookup_word,
+    restart_server,
     search_corpus,
     server_stats,
     word_report,
@@ -242,3 +243,12 @@ class TestServerStats:
         assert "zhcorpus Server" in result
         assert "Version" in result
         assert "Uptime" in result
+
+
+class TestRestartServer:
+    """restart_server tool handles restart requests."""
+
+    def test_restart_disabled(self, mcp_dbs, monkeypatch):
+        monkeypatch.setenv("ZHCORPUS_ALLOW_RESTART", "0")
+        result = asyncio.run(restart_server())
+        assert "disabled" in result.lower()

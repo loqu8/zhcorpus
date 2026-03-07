@@ -1,0 +1,38 @@
+# systemd user service for zhcorpus MCP server
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp zhcorpus-mcp.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now zhcorpus-mcp
+#
+# Logs:
+#   journalctl --user -u zhcorpus-mcp -f
+#
+# Status:
+#   systemctl --user status zhcorpus-mcp
+
+[Unit]
+Description=zhcorpus MCP server — Chinese corpus + dictionary for AI agents
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tim/Projects/loqu8/zhcorpus
+ExecStart=/home/tim/Projects/loqu8/zhcorpus/.venv/bin/python -m zhcorpus.mcp.cli --transport sse --port 8744 --web
+Restart=always
+RestartSec=2
+
+# Environment
+Environment=ZHCORPUS_CORPUS_DB=/home/tim/Projects/loqu8/zhcorpus/data/artifacts/zhcorpus.db
+Environment=ZHCORPUS_DICT_DB=/home/tim/Projects/loqu8/zhcorpus/data/artifacts/dictmaster.db
+Environment=ZHCORPUS_ALLOW_RESTART=1
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/tim/Projects/loqu8/zhcorpus/data /home/tim/Projects/loqu8/zhcorpus/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
