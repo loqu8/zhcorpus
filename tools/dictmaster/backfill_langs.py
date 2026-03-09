@@ -49,7 +49,10 @@ Rules:
 
 CRITICAL: Every non-Chinese definition must contain ZERO Chinese characters \
 (汉字). If you catch yourself writing 漢字/汉字 in any definition, replace \
-them with the target language equivalent.
+them with the target language equivalent. \
+EXCEPTION: When a headword is a variant or component of another character, you \
+may cite the reference character (e.g. "variant of 夂") — but the rest of the \
+definition must be in the target language only.
 
 Language-specific rules:
 - ja (Japanese): Provide the MEANING in Japanese, not just kanji echo or kana \
@@ -59,9 +62,18 @@ Japanese vocabulary.
 - tl (Tagalog): Use natural Tagalog vocabulary. Do NOT produce literal \
 word-for-word translations from English.
 - fa (Persian): Write definitions in Persian script (فارسی). Use native Persian \
-vocabulary.
+vocabulary. Do NOT mix in Latin script or other languages.
 - vi (Vietnamese): Write in Vietnamese with proper diacritics. Do NOT include \
-Chinese characters."""
+Chinese characters.
+- ar (Arabic): Write in Arabic script only. Do NOT mix in Latin words from \
+other languages (French, Spanish, English). Use proper Arabic equivalents.
+- th (Thai): Write in Thai script with proper tone marks. Do NOT transliterate \
+from English.
+- hi (Hindi): Write in Devanagari script. Use native Hindi vocabulary, not \
+English transliterations.
+- nl (Dutch): Write in standard Dutch. Use natural Dutch compounds and phrasing.
+- pt (Portuguese): Write in Brazilian Portuguese. Use proper diacritics.
+- it (Italian): Write in standard Italian."""
 
 BACKFILL_BATCH_TEMPLATE = """\
 Fill in the MISSING languages for these Chinese dictionary entries.
@@ -385,7 +397,7 @@ def run_backfill(
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
         # Fetch a working set from DB — enough to keep workers busy
-        fetch_size = workers * batch_size * 2
+        fetch_size = min(workers * batch_size * 2, total - processed)
         working_set = fetch_batch(conn, fetch_size, include_zero=include_zero)
 
         executor = ThreadPoolExecutor(max_workers=workers)
@@ -418,7 +430,8 @@ def run_backfill(
                 # Refill working set from DB when all submitted
                 if ws_idx >= len(working_set) and not pending and processed < total:
                     conn.commit()
-                    working_set = fetch_batch(conn, fetch_size, include_zero=include_zero)
+                    remaining = total - processed
+                    working_set = fetch_batch(conn, min(fetch_size, remaining), include_zero=include_zero)
                     ws_idx = 0
 
                 _submit_from_working_set()
