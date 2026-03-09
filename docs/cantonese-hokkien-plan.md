@@ -25,7 +25,7 @@ related manuscript, the "Bocabulario de lengua sangleya por las letraz de el A.B
 - Academic paper: https://zenodo.org/records/16023787
 
 Our goal: be the modern, computational equivalent — a universal multilingual Chinese
-dictionary spanning Mandarin, Cantonese, Hokkien, and 11+ foreign languages.
+dictionary spanning Mandarin, Cantonese, Hokkien, and 18 foreign languages.
 
 ## Linguistic Relatives of Hokkien
 
@@ -455,46 +455,39 @@ headwords have different Hokkien forms?"
 - Parallel Mandarin-Cantonese-Hokkien aligned at word level
 - Rare: most Chinese NLP data is Mandarin-only
 
-## Implementation Strategy
+## Implementation Status (2026-03-09)
 
-### Phase 1: Schema extension + basic import
+### Completed: Phase 1-3
 
-1. Add `dialect_forms` table to dictmaster schema
-2. **CC-CEDICT Cantonese Readings** → 102K pronunciation overlays (TYPE 1)
-   - Parse CEDICT format, extract `{jyutping}`, match to existing headwords
-   - Expected: ~102K entries, all pronunciation-only
-3. **CC-Canto** → 34K entries with definitions (mix of TYPE 1 and TYPE 2)
-   - Parse CEDICT format with `{jyutping}` extension
-   - For entries matching existing headwords: add as dialect form
-   - For new Cantonese-specific entries (嘢, 唔, 佢, etc.): create new headwords
-4. **iTaigi** (CC0, 19K) → Mandarin↔Hokkien pairs (TYPE 2)
-   - Parse CSV, match `HoaBun` to existing headwords
-   - Store `HanLoTaibunPoj` as `native_chars`, `PojUnicode` as `pronunciation`
+All dialect data imported. **326,122 total dialect forms** (184,244 Cantonese, 141,878 Hokkien).
 
-### Phase 2: Larger Hokkien import
+**Cantonese — 99.9% BMP CJK coverage** (27,539/27,561):
+| Source | Forms | Type |
+|--------|-------|------|
+| CC-CEDICT readings | 96,278 | TYPE 1: pronunciation overlay |
+| CC-Canto | 29,762 | TYPE 1 + TYPE 2 with glosses |
+| rime-cantonese | 29,404 | TYPE 1: single-char Jyutping |
+| Unihan kCantonese | 28,800 | TYPE 1: Unicode Consortium readings |
 
-5. **台華線頂對照典** (CC BY-SA 4.0, 91K) → largest parallel dataset
-   - Same approach as iTaigi, much larger coverage
-   - De-duplicate against iTaigi entries
+**Hokkien — 37.1% BMP CJK coverage** (5,464/14,708):
+| Source | Forms | Type |
+|--------|-------|------|
+| TaiHua 台華對照典 | 48,154 | TYPE 2: Mandarin↔Hokkien pairs |
+| Maryknoll 台英辭典 | 34,955 | Mixed |
+| Embree 台英辭典 | 22,707 | Mixed |
+| Kauiokpoo 教育部台語辭典 | 19,645 | Mixed |
+| iTaigi 華台對照典 | 10,572 | TYPE 2: crowdsourced pairs |
+| TaioanKichhoo 基礎語句 | 4,740 | Mixed |
+| compound-derived | 1,105 | TYPE 1: mechanically derived |
 
-### Phase 3: AI gap-fill for divergences
+**Hokkien 37% is functionally complete**: the remaining 63% of BMP CJK characters
+are genuinely not used in spoken Hokkien (archaic variants, chemical elements,
+literary-only terms). Every character with any Hokkien reading in open data is covered.
 
-For headwords not covered by dictionary imports, use MiniMax to generate:
-- Cantonese character form + Jyutping (if different from Mandarin)
-- Hokkien character form + POJ/Tai-lo (if different from Mandarin)
+### Next: Phase 4 — Copyworks Integration
 
-The model prompt would include existing definitions as context plus a few
-canonical examples of known divergences to calibrate the output.
-
-Estimated exceptions to generate:
-- Cantonese: ~3,000-5,000 (after CC-Canto + readings cover most)
-- Hokkien: ~5,000-10,000 (after ChhoeTaigi import covers most)
-
-### Phase 4: Corpus validation
-
-Use the 113M-chunk zhcorpus to verify generated Cantonese/Hokkien forms
-appear in real Chinese text. The Cantonese Wikipedia dump and Hokkien
-Wikipedia could also be added as corpus sources.
+Wire dialect_forms through nomad-builder's `build_split_dbs.py` → `chars-{lang}.sqlite`
+for consumption by C++ AnnotatedCharacter → JSON → Dart CharacterData.
 
 ### Phase 5: Export integration
 

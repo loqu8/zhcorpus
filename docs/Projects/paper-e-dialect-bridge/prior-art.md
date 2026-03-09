@@ -57,10 +57,10 @@ Lu, Lin, Lee, Tsai. Standardizes Hokkien's four writing systems for NMT.
 
 | Contribution | Novelty | Competition |
 |-------------|---------|-------------|
-| Multi-source merging (5+ open dicts) | **High** | WikiHan uses Wiktionary only |
+| Multi-source merging (11 open dicts) | **High** | WikiHan uses Wiktionary only |
 | Frequency-tier coverage analysis | **High** | No prior work measures against HSK/frequency tiers |
 | LLM-assisted gap-filling for dialect readings | **Novel** | Prior work uses seq2seq; LLMs with dictionary context is new |
-| 184K dialect forms unified database | **Good scale** | WikiHan 68K, but in IPA |
+| 326K dialect forms unified database | **Good scale** | WikiHan 68K, but in IPA |
 | Hokkien single-char derivation from compounds | **Novel** | Not attempted computationally |
 | Reproducible methodology for other dialects | **Moderate** | WikiHan also claims this |
 

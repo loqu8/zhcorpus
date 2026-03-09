@@ -35,10 +35,14 @@ from tools.dictmaster.merge import (
 )
 from tools.dictmaster.export import export_all_languages, export_stats
 from tools.dictmaster.parsers.dialect import (
+    derive_hokkien_from_compounds,
     import_cccanto,
     import_cccedict_readings,
+    import_chhoetaigi_generic,
     import_itaigi,
+    import_rime_cantonese,
     import_taihua,
+    import_unihan_cantonese,
 )
 
 # Default data paths
@@ -527,11 +531,68 @@ def step_dialect(db_path: Path, limit: int | None = None) -> None:
     else:
         print(f"  SKIP 台華對照典: {taihua_path} not found")
 
+    # Additional ChhoeTaigi sources (Hokkien)
+    chhoetaigi_sources = [
+        ("kauiokpoo", "ChhoeTaigi_KauiokpooTaigiSutian.csv"),
+        ("embree", "ChhoeTaigi_EmbreeTaiengSutian.csv"),
+        ("maryknoll", "ChhoeTaigi_MaryknollTaiengSutian.csv"),
+        ("taioankichhoo", "ChhoeTaigi_TaioanPehoeKichhooGiku.csv"),
+    ]
+    chhoetaigi_dir = (
+        RAW_DIR / "hokkien" / "ChhoeTaigiDatabase" / "ChhoeTaigiDatabase"
+    )
+    for source_name, filename in chhoetaigi_sources:
+        csv_path = chhoetaigi_dir / filename
+        if csv_path.exists():
+            print(f"  Importing {source_name} (nan) from {filename}...")
+            t0 = time.time()
+            count = import_chhoetaigi_generic(conn, csv_path, source_name, limit=limit)
+            update_source_count(conn, source_name)
+            print(f"    -> {count:,} dialect forms in {time.time() - t0:.1f}s")
+        else:
+            print(f"  SKIP {source_name}: {csv_path} not found")
+
+    # Derive Hokkien single-char readings from 2-char compounds
+    print("  Deriving Hokkien single-char readings from compounds...")
+    t0 = time.time()
+    count = derive_hokkien_from_compounds(conn, min_confidence=1)
+    update_source_count(conn, "compound-derived")
+    print(f"    -> {count:,} dialect forms in {time.time() - t0:.1f}s")
+
+    # rime-cantonese: community-maintained char→Jyutping (CC BY 4.0)
+    rime_path = RAW_DIR / "hokkien" / "rime-cantonese" / "jyut6ping3.chars.dict.yaml"
+    if rime_path.exists():
+        print(f"  Importing rime-cantonese (yue) from {rime_path.name}...")
+        t0 = time.time()
+        count = import_rime_cantonese(conn, rime_path, limit=limit)
+        update_source_count(conn, "rime-cantonese")
+        print(f"    -> {count:,} dialect forms in {time.time() - t0:.1f}s")
+    else:
+        print(f"  SKIP rime-cantonese: {rime_path} not found")
+
+    # Unihan kCantonese: Unicode Consortium readings
+    unihan_path = Path("/home/tim/Projects/loqu8/nomad-builder/tools/chardata/raw/Unihan.zip")
+    if unihan_path.exists():
+        print(f"  Importing Unihan kCantonese (yue) from {unihan_path.name}...")
+        t0 = time.time()
+        count = import_unihan_cantonese(conn, unihan_path, limit=limit)
+        update_source_count(conn, "unihan")
+        print(f"    -> {count:,} dialect forms in {time.time() - t0:.1f}s")
+    else:
+        print(f"  SKIP Unihan: {unihan_path} not found")
+
     # Report
     total = conn.execute("SELECT COUNT(*) FROM dialect_forms").fetchone()[0]
     yue = conn.execute("SELECT COUNT(*) FROM dialect_forms WHERE dialect='yue'").fetchone()[0]
     nan = conn.execute("SELECT COUNT(*) FROM dialect_forms WHERE dialect='nan'").fetchone()[0]
     print(f"\n  Dialect forms total: {total:,} (Cantonese: {yue:,}, Hokkien: {nan:,})")
+
+    # Per-source breakdown
+    print("  Per-source:")
+    for row in conn.execute(
+        "SELECT source, COUNT(*) FROM dialect_forms GROUP BY source ORDER BY source"
+    ):
+        print(f"    {row[0]}: {row[1]:,}")
 
     conn.close()
 
