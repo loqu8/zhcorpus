@@ -197,35 +197,60 @@ def parse_backfill_response(
 # Query helpers
 # ---------------------------------------------------------------------------
 
-def get_partial_entries(conn: sqlite3.Connection, include_zero: bool = False) -> list[dict]:
-    """Find headwords with < 12 minimax langs."""
-    if include_zero:
-        # Include headwords with 0 defs too
-        rows = conn.execute("""
-            SELECT h.id, h.traditional, h.simplified, h.pinyin,
-                   COALESCE(GROUP_CONCAT(d.lang), '') as existing_langs
-            FROM headwords h
-            LEFT JOIN definitions d ON d.headword_id = h.id AND d.source = 'minimax'
-            GROUP BY h.id
-            HAVING COUNT(DISTINCT d.lang) < 12
-            ORDER BY COUNT(DISTINCT d.lang) DESC, h.id
-        """).fetchall()
-    else:
-        # Only headwords that have SOME defs but not all 12
-        rows = conn.execute("""
-            SELECT h.id, h.traditional, h.simplified, h.pinyin,
-                   GROUP_CONCAT(d.lang) as existing_langs
-            FROM headwords h
-            JOIN definitions d ON d.headword_id = h.id AND d.source = 'minimax'
-            GROUP BY h.id
-            HAVING COUNT(DISTINCT d.lang) < 12
-            ORDER BY COUNT(DISTINCT d.lang) DESC, h.id
-        """).fetchall()
+def count_partial_entries(conn: sqlite3.Connection, include_zero: bool = False) -> tuple[int, Counter]:
+    """Count headwords needing backfill and per-lang gaps without loading all rows."""
+    target_count = len(ALL_TARGET_LANGS)
+    join = "LEFT JOIN" if include_zero else "JOIN"
+    rows = conn.execute(f"""
+        SELECT GROUP_CONCAT(DISTINCT d.lang) as existing_langs
+        FROM headwords h
+        {join} definitions d ON d.headword_id = h.id AND d.source = 'minimax'
+        GROUP BY h.id
+        HAVING COUNT(DISTINCT d.lang) < ?
+    """, (target_count,)).fetchall()
 
-    entries = []
+    missing_count: Counter = Counter()
     for row in rows:
         present = set(row["existing_langs"].split(",")) if row["existing_langs"] else set()
-        present.discard("")  # clean up empty strings
+        present.discard("")
+        for lang in ALL_LANGS_SET - present:
+            missing_count[lang] += 1
+    return len(rows), missing_count
+
+
+def fetch_batch(
+    conn: sqlite3.Connection,
+    batch_size: int,
+    include_zero: bool = False,
+) -> list[dict]:
+    """Fetch one batch of headwords needing backfill, with existing defs included.
+
+    Uses the DB as a live queue — each call queries for headwords that still
+    have fewer than ALL_TARGET_LANGS definitions, so completed entries are
+    automatically skipped on the next call.
+    """
+    target_count = len(ALL_TARGET_LANGS)
+    join = "LEFT JOIN" if include_zero else "JOIN"
+    rows = conn.execute(f"""
+        SELECT h.id, h.traditional, h.simplified, h.pinyin,
+               GROUP_CONCAT(d.lang) as existing_langs
+        FROM headwords h
+        {join} definitions d ON d.headword_id = h.id AND d.source = 'minimax'
+        GROUP BY h.id
+        HAVING COUNT(DISTINCT d.lang) < ?
+        ORDER BY h.id
+        LIMIT ?
+    """, (target_count, batch_size)).fetchall()
+
+    if not rows:
+        return []
+
+    # Build entries with missing langs
+    entries = []
+    ids = []
+    for row in rows:
+        present = set(row["existing_langs"].split(",")) if row["existing_langs"] else set()
+        present.discard("")
         missing = sorted(ALL_LANGS_SET - present)
         entries.append({
             "headword_id": row["id"],
@@ -235,16 +260,22 @@ def get_partial_entries(conn: sqlite3.Connection, include_zero: bool = False) ->
             "missing_langs": missing,
             "existing_lang_set": present,
         })
-    return entries
+        ids.append(row["id"])
 
-
-def load_existing_defs(conn: sqlite3.Connection, headword_id: int) -> dict[str, str]:
-    """Fetch existing minimax definitions for context."""
-    rows = conn.execute(
-        "SELECT lang, definition FROM definitions WHERE headword_id = ? AND source = 'minimax'",
-        (headword_id,),
+    # Bulk-load existing definitions for context
+    placeholders = ",".join("?" * len(ids))
+    def_rows = conn.execute(
+        f"SELECT headword_id, lang, definition FROM definitions "
+        f"WHERE headword_id IN ({placeholders}) AND source = 'minimax'",
+        ids,
     ).fetchall()
-    return {r["lang"]: r["definition"] for r in rows}
+    defs_by_id: dict[int, dict[str, str]] = {hid: {} for hid in ids}
+    for r in def_rows:
+        defs_by_id[r["headword_id"]][r["lang"]] = r["definition"]
+    for e in entries:
+        e["existing_defs"] = defs_by_id[e["headword_id"]]
+
+    return entries
 
 
 # ---------------------------------------------------------------------------
@@ -260,48 +291,42 @@ def run_backfill(
     include_zero: bool = False,
     prompt_version: str = "v2-backfill",
 ) -> None:
-    """Run the backfill pass."""
+    """Run the backfill pass.
+
+    Uses the DB as a live queue: each iteration fetches the next batch of
+    headwords that still need translations, so memory stays constant regardless
+    of corpus size. Safe to interrupt and resume — completed work persists.
+    """
     from tools.dictmaster.translate.minimax_api import _chat
 
     conn = get_connection(db_path)
     ensure_source(conn, "minimax")
 
-    entries = get_partial_entries(conn, include_zero=include_zero)
+    total, missing_count = count_partial_entries(conn, include_zero=include_zero)
     if limit:
-        entries = entries[:limit]
+        total = min(total, limit)
 
-    total = len(entries)
-    missing_count = Counter()
-    for e in entries:
-        for lang in e["missing_langs"]:
-            missing_count[lang] += 1
-
-    print(f"Backfill: {total:,} headwords with partial coverage")
-    print(f"  Total missing definition slots: {sum(missing_count.values()):,}")
-    print(f"  Per-lang gaps:")
+    print(f"Backfill: {total:,} headwords with partial coverage", flush=True)
+    print(f"  Total missing definition slots: {sum(missing_count.values()):,}", flush=True)
+    print(f"  Per-lang gaps:", flush=True)
     for lang in ALL_TARGET_LANGS:
         if missing_count[lang] > 0:
-            print(f"    {lang}: {missing_count[lang]:,}")
+            print(f"    {lang}: {missing_count[lang]:,}", flush=True)
 
     if dry_run:
         print("\n  [DRY RUN] Would backfill the above. Exiting.")
         conn.close()
         return
 
-    # Load existing defs for all entries (main thread)
-    print(f"\n  Loading existing definitions...")
-    for e in entries:
-        e["existing_defs"] = load_existing_defs(conn, e["headword_id"])
-
-    print(f"  Starting backfill ({workers} workers, batch size {batch_size})...")
+    print(f"\n  Starting backfill ({workers} workers, batch size {batch_size})...", flush=True)
     t_start = time.time()
     filled_defs = 0
     filled_entries = 0
+    processed = 0
 
     def _translate_one_batch(batch: list[dict]) -> list[dict[str, str]]:
         """Send a single backfill batch to the API. Thread-safe."""
         prompt = build_backfill_batch_prompt(batch)
-        # Estimate tokens: existing defs ~150 tok/entry, missing ~30 tok/lang output
         avg_missing = sum(len(e["missing_langs"]) for e in batch) / len(batch)
         max_tokens = max(2048, int(len(batch) * avg_missing * 80))
         response = _chat(BACKFILL_SYSTEM_PROMPT, prompt, max_tokens=min(max_tokens, 8192))
@@ -315,13 +340,12 @@ def run_backfill(
             saved_any = False
             for lang, defn in lang_defs.items():
                 if defn and lang in entry["missing_langs"]:
-                    # Safety: verify this definition doesn't already exist in DB
                     existing = conn.execute(
                         "SELECT 1 FROM definitions WHERE headword_id = ? AND lang = ? AND source = 'minimax'",
                         (entry["headword_id"], lang),
                     ).fetchone()
                     if existing:
-                        continue  # already has this lang — never overwrite
+                        continue
                     upsert_definition(
                         conn, entry["headword_id"], lang, defn, "minimax",
                         confidence="medium", prompt_version=prompt_version,
@@ -331,84 +355,78 @@ def run_backfill(
             if saved_any:
                 filled_entries += 1
 
+    def _log_progress():
+        elapsed = time.time() - t_start
+        rate = processed / elapsed if elapsed > 0 else 0
+        remaining = total - processed
+        eta = remaining / rate if rate > 0 else 0
+        print(
+            f"    [{processed:,}/{total:,}] "
+            f"{filled_entries:,} entries, {filled_defs:,} defs filled "
+            f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)",
+            flush=True,
+        )
+
     if workers <= 1:
-        for i in range(0, total, batch_size):
-            batch = entries[i:i + batch_size]
+        while processed < total:
+            batch = fetch_batch(conn, batch_size, include_zero=include_zero)
+            if not batch:
+                break
             try:
                 results = _translate_one_batch(batch)
             except Exception as e:
-                print(f"    ERROR at batch {i}: {e}")
+                print(f"    ERROR: {e}", flush=True)
                 continue
-
             _save_results(batch, results)
             conn.commit()
-
-            done = min(i + batch_size, total)
-            elapsed = time.time() - t_start
-            rate = done / elapsed if elapsed > 0 else 0
-            eta = (total - done) / rate if rate > 0 else 0
-            print(
-                f"    [{done:,}/{total:,}] "
-                f"{filled_entries:,} entries, {filled_defs:,} defs filled "
-                f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)"
-            )
+            processed += len(batch)
+            _log_progress()
     else:
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        executor = ThreadPoolExecutor(max_workers=workers)
-        pending = {}
-        batch_map = {}
-        next_idx = 0
-        completed_since_commit = 0
-        progress_interval = batch_size * 10
+        # Fetch a working set from DB — enough to keep workers busy
+        fetch_size = workers * batch_size * 2
+        working_set = fetch_batch(conn, fetch_size, include_zero=include_zero)
 
-        # Pre-submit initial batches
-        for _ in range(min(workers * 2, (total + batch_size - 1) // batch_size)):
-            if next_idx >= total:
-                break
-            batch = entries[next_idx:next_idx + batch_size]
-            batch_map[next_idx] = batch
-            fut = executor.submit(_translate_one_batch, batch)
-            pending[fut] = next_idx
-            next_idx += batch_size
+        executor = ThreadPoolExecutor(max_workers=workers)
+        pending: dict = {}       # future -> batch
+        ws_idx = 0
+
+        def _submit_from_working_set():
+            nonlocal ws_idx
+            while len(pending) < workers * 2 and ws_idx < len(working_set):
+                batch = working_set[ws_idx:ws_idx + batch_size]
+                if not batch:
+                    break
+                fut = executor.submit(_translate_one_batch, batch)
+                pending[fut] = batch
+                ws_idx += batch_size
+
+        _submit_from_working_set()
 
         while pending:
-            done_futures = set()
             for fut in as_completed(pending):
-                done_futures.add(fut)
-                break
-
-            for fut in done_futures:
-                bidx = pending.pop(fut)
-                batch = batch_map.pop(bidx)
+                batch = pending.pop(fut)
                 try:
                     results = fut.result()
                     _save_results(batch, results)
-                    completed_since_commit += 1
                 except Exception as e:
-                    print(f"    ERROR at batch {bidx}: {e}")
+                    print(f"    ERROR: {e}", flush=True)
 
-                if next_idx < total:
-                    new_batch = entries[next_idx:next_idx + batch_size]
-                    batch_map[next_idx] = new_batch
-                    new_fut = executor.submit(_translate_one_batch, new_batch)
-                    pending[new_fut] = next_idx
-                    next_idx += batch_size
+                processed += len(batch)
 
-            if completed_since_commit >= workers * 2:
-                conn.commit()
-                completed_since_commit = 0
+                # Refill working set from DB when all submitted
+                if ws_idx >= len(working_set) and not pending and processed < total:
+                    conn.commit()
+                    working_set = fetch_batch(conn, fetch_size, include_zero=include_zero)
+                    ws_idx = 0
 
-            done = filled_entries
-            if done % progress_interval < batch_size or not pending:
-                elapsed = time.time() - t_start
-                rate = done / elapsed if elapsed > 0 else 0
-                eta = (total - done) / rate if rate > 0 else 0
-                print(
-                    f"    [{done:,}/{total:,}] "
-                    f"{filled_entries:,} entries, {filled_defs:,} defs filled "
-                    f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)"
-                )
+                _submit_from_working_set()
+
+                if processed % (batch_size * 10) < batch_size:
+                    conn.commit()
+                    _log_progress()
+                break  # process one future at a time
 
         conn.commit()
         executor.shutdown(wait=False)

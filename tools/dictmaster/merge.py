@@ -164,7 +164,7 @@ def get_coverage_report(conn: sqlite3.Connection) -> dict:
         }
 
     # Find headwords with no definitions in each target language
-    target_langs = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl"]
+    target_langs = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa", "nl", "pt", "ar", "th", "hi", "it"]
     gaps = {}
     for lang in target_langs:
         gap_count = conn.execute("""

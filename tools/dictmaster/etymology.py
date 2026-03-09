@@ -33,6 +33,13 @@ LANG_DISPLAY = {
     "id": "Indonesian",
     "vi": "Vietnamese",
     "tl": "Tagalog",
+    "fa": "Persian",
+    "nl": "Dutch",
+    "pt": "Portuguese",
+    "ar": "Arabic",
+    "th": "Thai",
+    "hi": "Hindi",
+    "it": "Italian",
 }
 
 

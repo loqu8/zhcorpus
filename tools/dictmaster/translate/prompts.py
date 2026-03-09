@@ -61,6 +61,12 @@ LANG_NAMES = {
     "vi": "Vietnamese",
     "tl": "Tagalog",
     "fa": "Persian",
+    "nl": "Dutch",
+    "pt": "Portuguese",
+    "ar": "Arabic",
+    "th": "Thai",
+    "hi": "Hindi",
+    "it": "Italian",
 }
 
 
@@ -144,11 +150,11 @@ def build_batch_prompt(
 # Universal (all-languages-at-once) prompts
 # ---------------------------------------------------------------------------
 
-ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa"]
+ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa", "nl", "pt", "ar", "th", "hi", "it"]
 
 UNIVERSAL_SYSTEM_PROMPT = """\
 You are a professional multilingual Chinese lexicographer producing \
-dictionary-style definitions in 12 languages.
+dictionary-style definitions in 18 languages.
 
 Rules:
 - Output EXACTLY one line per language in format "xx: def1/def2"
