@@ -61,6 +61,12 @@ LANG_NAMES = {
     "vi": "Vietnamese",
     "tl": "Tagalog",
     "fa": "Persian",
+    "nl": "Dutch",
+    "pt": "Portuguese",
+    "ar": "Arabic",
+    "th": "Thai",
+    "hi": "Hindi",
+    "it": "Italian",
 }
 
 
@@ -144,11 +150,11 @@ def build_batch_prompt(
 # Universal (all-languages-at-once) prompts
 # ---------------------------------------------------------------------------
 
-ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa"]
+ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa", "nl", "pt", "ar", "th", "hi", "it"]
 
 UNIVERSAL_SYSTEM_PROMPT = """\
 You are a professional multilingual Chinese lexicographer producing \
-dictionary-style definitions in 12 languages.
+dictionary-style definitions in 18 languages.
 
 Rules:
 - Output EXACTLY one line per language in format "xx: def1/def2"
@@ -162,7 +168,10 @@ Rules:
 
 CRITICAL: Every non-Chinese definition must contain ZERO Chinese characters (汉字). \
 If you catch yourself writing 漢字/汉字 in any definition, replace them with the \
-target language equivalent.
+target language equivalent. \
+EXCEPTION: When a headword is a variant or component of another character, you \
+may cite the reference character (e.g. "variant of 夂") — but the rest of the \
+definition must be in the target language only.
 
 Language-specific rules:
 - ja (Japanese): Provide the MEANING in Japanese, not just kanji echo or kana reading. \
@@ -172,8 +181,16 @@ NOT 銀行 or ぎんこう). Use native Japanese vocabulary.
 Example: 은행/금융 기관, NOT 銀行/은행.
 - tl (Tagalog): Use natural Tagalog vocabulary. Do NOT produce literal word-for-word \
 translations from English. Prefer established Tagalog equivalents.
-- fa (Persian): Write definitions in Persian script (فارسی). Use native Persian vocabulary.
-- vi (Vietnamese): Write in Vietnamese with proper diacritics. Do NOT include Chinese characters."""
+- fa (Persian): Write definitions in Persian script (فارسی). Use native Persian vocabulary. \
+Do NOT mix in Latin script or other languages.
+- vi (Vietnamese): Write in Vietnamese with proper diacritics. Do NOT include Chinese characters.
+- ar (Arabic): Write in Arabic script only. Do NOT mix in Latin words from other languages \
+(French, Spanish, English). Use proper Arabic equivalents.
+- th (Thai): Write in Thai script with proper tone marks. Do NOT transliterate from English.
+- hi (Hindi): Write in Devanagari script. Use native Hindi vocabulary, not English transliterations.
+- nl (Dutch): Write in standard Dutch. Use natural Dutch compounds and phrasing.
+- pt (Portuguese): Write in Brazilian Portuguese. Use proper diacritics.
+- it (Italian): Write in standard Italian."""
 
 UNIVERSAL_TRANSLATE_TEMPLATE = """\
 Chinese: {traditional} / {simplified}

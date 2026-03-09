@@ -48,6 +48,13 @@ LANG_TITLES = {
     "id": "Dictmaster Chinese-Indonesian Dictionary (Tionghoa-Indonesia)",
     "vi": "Dictmaster Chinese-Vietnamese Dictionary (Từ điển Trung-Việt)",
     "tl": "Dictmaster Chinese-Tagalog Dictionary (Diksyunaryo Tsino-Tagalog)",
+    "fa": "Dictmaster Chinese-Persian Dictionary (فرهنگ لغت چینی-فارسی)",
+    "nl": "Dictmaster Chinese-Dutch Dictionary (Chinees-Nederlands)",
+    "pt": "Dictmaster Chinese-Portuguese Dictionary (Chinês-Português)",
+    "ar": "Dictmaster Chinese-Arabic Dictionary (قاموس صيني-عربي)",
+    "th": "Dictmaster Chinese-Thai Dictionary (พจนานุกรมจีน-ไทย)",
+    "hi": "Dictmaster Chinese-Hindi Dictionary (चीनी-हिंदी शब्दकोश)",
+    "it": "Dictmaster Chinese-Italian Dictionary (Dizionario Cinese-Italiano)",
 }
 
 
