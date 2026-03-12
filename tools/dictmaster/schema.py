@@ -3,10 +3,24 @@
 Master multilingual Chinese dictionary — SQLite relational DB (no FTS5).
 """
 
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+# Wiktextract/Kaikki sometimes has pinyin like "ming2 (ming²)5". Strip the suffix so we store only numeric tone.
+_PINYIN_TONELESS_SUFFIX = re.compile(r" \([^)]*[¹²³⁴⁵][^)]*\)5\s*$")
+
+
+def strip_pinyin_toneless_suffix(pinyin: str) -> str:
+    """Remove ' (pinyin_superscript)5' suffix from Wiktextract pinyin; return numeric-tone-only."""
+    if not pinyin:
+        return pinyin
+    m = _PINYIN_TONELESS_SUFFIX.search(pinyin)
+    if m:
+        return pinyin[: m.start()].strip()
+    return pinyin.strip()
 
 
 SCHEMA_VERSION = 3
@@ -200,6 +214,7 @@ def upsert_headword(
     pos: Optional[str] = None,
 ) -> int:
     """Insert or get a headword, return its id. Updates POS if provided and currently null."""
+    pinyin = strip_pinyin_toneless_suffix(pinyin.strip())
     cur = conn.execute(
         "INSERT OR IGNORE INTO headwords (traditional, simplified, pinyin, pos) "
         "VALUES (?, ?, ?, ?)",
