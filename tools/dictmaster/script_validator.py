@@ -6,8 +6,22 @@ contamination rate from MiniMax (Cyrillic leaking into Arabic, Hangul
 into Japanese, etc.).  This module provides the hard reject gate.
 
 CJK characters are allowed in metalinguistic cross-references
-("variant of 迥", "成分 of 殷") — detected via regex patterns that
+("variant of 迥", "used in 躊躇") — detected via regex patterns that
 match common reference frames across all target languages.
+
+WHY GAPS EXIST (see docs/translation-backfill-plan.md for full analysis):
+
+  Most residual gaps are bound morphemes whose definitions inherently
+  cite Chinese compounds: 躊 → "used in 躊躇".  The LLM correctly
+  writes e.g. Arabic "يُستخدم في 躊躇 (chóuchú)" but this mixes three
+  scripts (Arabic + CJK + Latin pinyin).
+
+  - CJK in cross-references: ALLOWED (the reference patterns below
+    detect "used in X", "variant of X", etc. in all 18 target languages)
+  - Latin pinyin in Arabic/Persian/Thai: CORRECTLY REJECTED (the LLM
+    should transliterate to target script or omit the parenthetical)
+  - Multiple CJK runs joined by slashes/conjunctions (躊躇／踌躇):
+    ALLOWED via conjunction patterns
 
 Usage:
     from tools.dictmaster.script_validator import validate_definition
@@ -160,12 +174,16 @@ _REF_PATTERNS = [
     re.compile(rf'(?:of|de|di|von|van|av|dari|ng|của|의|の|ของ|для|für|pour|para|per|för)\s+({_CJK_RUN})'),
 
     # "used in X" / "verwendet in X" / "utilisé dans X" — cross-ref to compound
-    re.compile(rf'(?:used|verwendet|utilisé|usado|usato|gebruikt|används|digunakan|ginagamit|dùng|используется)\s.*?({_CJK_RUN})', re.IGNORECASE),
+    re.compile(rf'(?:used|verwendet|utilisé|usado|usato|gebruikt|används|digunakan|ginagamit|dùng|используется|ใช้ใน|يُستخدم في|استفاده در|में प्रयुक्त|ใช้ใน)\s*({_CJK_RUN})', re.IGNORECASE),
 
     # Prepositions that immediately precede CJK: "في X", "در X"
-    re.compile(rf'(?:dalam|في|در|trong)\s+({_CJK_RUN})'),
+    re.compile(rf'(?:dalam|في|در|trong|ใน)\s+({_CJK_RUN})'),
     # CJK followed by postposition (Hindi/Thai/Korean word order): "X में", "X का"
     re.compile(rf'({_CJK_RUN})\s*(?:में|ใน|에서|का|की|के|の|의|를|을|が|は|を)'),
+
+    # CJK separated by conjunctions/slashes (躊躇／踌躇, 躊躇 و 踌躇)
+    re.compile(rf'({_CJK_RUN})\s*[/／、，,]\s*({_CJK_RUN})'),
+    re.compile(rf'({_CJK_RUN})\s*(?:و|и|dan|at|và|und|et|y|e|och|en|og)\s+({_CJK_RUN})'),
 
     # "after X" / grammatical context — "(after 得/不)", "setelah 得"
     re.compile(rf'(?:after|nach|après|después|dopo|na|efter|setelah|pagkatapos|sau|後|بعد|के बाद|หลัง)\s+({_CJK_RUN})', re.IGNORECASE),

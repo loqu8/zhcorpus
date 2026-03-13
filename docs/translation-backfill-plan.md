@@ -296,6 +296,91 @@ See: `tools/dictmaster/backfill_langs_v2.py` for implementation.
 | de | 587,926 | 100.0% | Complete (multi-source) |
 | en | 691,821 | 100.0% | Complete (multi-source) |
 
+## Residual Single-Char Gaps: Root Cause Analysis (2026-03-12)
+
+After all backfill passes and the contamination cleanup, **2,865 single-char
+headwords** still have gaps in 1–6 languages (7,217 total definition slots).
+All multi-char headwords are 100% complete. Zero headwords have zero definitions.
+
+### Gap distribution by language
+
+| Lang | Gaps | % of 30,546 |
+|------|------|------------|
+| ar (Arabic) | 1,084 | 3.5% |
+| th (Thai) | 1,016 | 3.3% |
+| de (German) | 892 | 2.9% |
+| fa (Persian) | 660 | 2.2% |
+| es (Spanish) | 635 | 2.1% |
+| sv (Swedish) | 496 | 1.6% |
+| ru (Russian) | 355 | 1.2% |
+| hi (Hindi) | 301 | 1.0% |
+| fr–it | 165–264 | 0.5–0.9% |
+
+Arabic and Thai have the most gaps. **All HSK characters are 100% complete.**
+
+### Root cause: bound morphemes + script purity
+
+The vast majority (~90%) of these gaps are **bound morphemes** — characters with
+no independent meaning that only appear inside specific compounds. Their English
+definitions look like:
+
+> 躊 [chóu]: "used in 躊躇／踌躇 (chóuchú), etc."
+> 峍 [lù]: "used in 崛峍/峍矹/峍崪"
+> 螔 [sī]: "only used in 螔䗔"
+
+To define these in Arabic, the LLM correctly writes:
+
+> يُستخدم في 躊躇／踌躇 (chóuchú)
+
+But this contains **three scripts**: Arabic + CJK characters (躊躇) + Latin pinyin
+(chóuchú). The script validator rejects it because:
+
+1. **CJK characters** — the 躊躇 cross-reference IS legitimate (you can't explain
+   what 躊 means without citing the compound it appears in), but the validator
+   wasn't recognizing all cross-reference patterns in all languages.
+
+2. **Latin pinyin in Arabic** — the `(chóuchú)` parenthetical is genuinely wrong
+   for Arabic. Arabic readers can't read Latin pinyin. The LLM should either
+   transliterate to Arabic script (تشو تشو) or omit it entirely. This rejection
+   is **correct** and should remain.
+
+### Why some languages are harder than others
+
+- **Arabic/Persian**: No Latin script allowed at all. The LLM tends to include
+  Latin pinyin in parentheticals, which is invalid. Also, the LLM sometimes falls
+  back to Russian (Cyrillic) when it can't figure out Arabic.
+- **Thai**: Same problem — the LLM includes Latin pinyin. Additionally, the Thai
+  "used in" phrase (`ใช้ใน`) wasn't in the validator's reference pattern list until
+  the 2026-03-12 fix.
+- **German/French/Spanish**: These gaps are mostly from Wiktextract duplicate
+  entries with unusual pinyin encodings (e.g., `shi4 (shi⁴)5`), not from
+  validator rejections. The LLM sometimes fails to produce valid output for these.
+
+### Validator fixes applied (2026-03-12)
+
+1. **Added Thai/Arabic/Persian/Hindi "used in" phrases** to the reference pattern
+   list: `ใช้ใน`, `يُستخدم في`, `استفاده در`, `में प्रयुक्त`
+2. **Added conjunction/slash patterns** for multiple CJK runs:
+   `躊躇／踌躇` and `躊躇 و 踌躇` now both pass (each CJK run is recognized
+   as part of a reference frame)
+3. **Added `ใน` (Thai "in")** as a preposition that can precede CJK
+
+These fixes mean the next backfill pass will recover many of the Thai/Arabic gaps
+where the LLM was producing correct output that the validator was wrongly rejecting.
+
+### What won't be recovered
+
+- Entries where the LLM includes Latin pinyin in Arabic/Persian/Thai definitions
+  (correct rejection — the LLM needs to transliterate or omit)
+- Entries where the LLM falls back to Cyrillic/wrong language
+- Entries for extremely obscure characters with no real meaning in any language
+
+### Impact on shipping
+
+**None.** All HSK characters are complete. All high-frequency characters are
+complete. The gaps are exclusively in obscure radicals, bound morphemes, and
+Wiktextract duplicates that no learner will encounter.
+
 ## Notes
 
 - Entries with only 1-2 langs may have had fundamentally bad API responses.
