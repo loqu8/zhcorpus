@@ -375,6 +375,27 @@ where the LLM was producing correct output that the validator was wrongly reject
 - Entries where the LLM falls back to Cyrillic/wrong language
 - Entries for extremely obscure characters with no real meaning in any language
 
+### Wiktextract duplicate pinyin (82% of gaps)
+
+2,346 of the 2,865 gap headwords are caused by a Wiktextract import artifact.
+Wiktextract stores pinyin with both numeric and superscript tones plus a
+trailing neutral-tone marker:
+
+    suo3 (suo³)5     ← Wiktextract format
+    suo3             ← CC-CEDICT format (the normal one)
+
+Our parser imported these as separate headwords because the pinyin strings
+differ. The clean `suo3` entry has 18/18 langs. The duplicate `suo3 (suo³)5`
+sits partially filled.
+
+**No shipping impact**: `build_dbs.py` already normalizes pinyin at export
+via `normalize_pinyin_display()`, so duplicates merge into one row in
+copyworks.xdb and ice.xdb. The duplicates only matter when counting "gaps"
+in dictmaster.db.
+
+**Future fix**: normalize Wiktextract pinyin at import time (in the parser)
+to prevent duplicate headword creation. This would eliminate 82% of gaps.
+
 ### Impact on shipping
 
 **None.** All HSK characters are complete. All high-frequency characters are
