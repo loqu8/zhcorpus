@@ -1,0 +1,93 @@
+{
+  "backtranslation": {
+    "by_language": {
+      "es": {
+        "n": 126,
+        "sense_coverage": 0.79,
+        "false_sense_rate": 0.202
+      },
+      "ko": {
+        "n": 119,
+        "sense_coverage": 0.6,
+        "false_sense_rate": 0.382
+      },
+      "ru": {
+        "n": 123,
+        "sense_coverage": 0.713,
+        "false_sense_rate": 0.294
+      },
+      "vi": {
+        "n": 107,
+        "sense_coverage": 0.654,
+        "false_sense_rate": 0.282
+      },
+      "tl": {
+        "n": 110,
+        "sense_coverage": 0.617,
+        "false_sense_rate": 0.341
+      },
+      "fa": {
+        "n": 128,
+        "sense_coverage": 0.676,
+        "false_sense_rate": 0.316
+      },
+      "sv": {
+        "n": 118,
+        "sense_coverage": 0.742,
+        "false_sense_rate": 0.242
+      },
+      "nl": {
+        "n": 125,
+        "sense_coverage": 0.697,
+        "false_sense_rate": 0.282
+      },
+      "pt": {
+        "n": 123,
+        "sense_coverage": 0.752,
+        "false_sense_rate": 0.223
+      },
+      "ar": {
+        "n": 129,
+        "sense_coverage": 0.653,
+        "false_sense_rate": 0.347
+      },
+      "th": {
+        "n": 113,
+        "sense_coverage": 0.668,
+        "false_sense_rate": 0.314
+      },
+      "hi": {
+        "n": 128,
+        "sense_coverage": 0.634,
+        "false_sense_rate": 0.323
+      },
+      "it": {
+        "n": 122,
+        "sense_coverage": 0.747,
+        "false_sense_rate": 0.254
+      }
+    },
+    "by_band": {
+      "high": {
+        "n": 558,
+        "sense_coverage": 0.647,
+        "false_sense_rate": 0.338
+      },
+      "mid": {
+        "n": 572,
+        "sense_coverage": 0.702,
+        "false_sense_rate": 0.287
+      },
+      "low": {
+        "n": 441,
+        "sense_coverage": 0.724,
+        "false_sense_rate": 0.241
+      }
+    },
+    "overall": {
+      "n": 1571,
+      "sense_coverage": 0.689,
+      "false_sense_rate": 0.292
+    }
+  }
+}

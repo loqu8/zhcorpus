@@ -1,0 +1,50 @@
+{
+  "backend": "gpt4o",
+  "by_language": {
+    "de": {
+      "n": 73,
+      "sense_coverage": 0.522,
+      "false_sense_rate": 0.529,
+      "format_compliance": 0.781
+    },
+    "fr": {
+      "n": 63,
+      "sense_coverage": 0.619,
+      "false_sense_rate": 0.413,
+      "format_compliance": 0.73
+    },
+    "id": {
+      "n": 139,
+      "sense_coverage": 0.838,
+      "false_sense_rate": 0.174,
+      "format_compliance": 0.727
+    }
+  },
+  "by_band": {
+    "high": {
+      "n": 140,
+      "sense_coverage": 0.657,
+      "false_sense_rate": 0.375,
+      "format_compliance": 0.793
+    },
+    "mid": {
+      "n": 96,
+      "sense_coverage": 0.685,
+      "false_sense_rate": 0.341,
+      "format_compliance": 0.719
+    },
+    "low": {
+      "n": 39,
+      "sense_coverage": 0.919,
+      "false_sense_rate": 0.094,
+      "format_compliance": 0.615
+    }
+  },
+  "overall": {
+    "n": 275,
+    "sense_coverage": 0.704,
+    "false_sense_rate": 0.323,
+    "format_compliance": 0.742,
+    "errors": 0
+  }
+}

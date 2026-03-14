@@ -1,0 +1,50 @@
+{
+  "backend": "minimax",
+  "by_language": {
+    "de": {
+      "n": 48,
+      "sense_coverage": 0.627,
+      "false_sense_rate": 0.461,
+      "format_compliance": 0.938
+    },
+    "fr": {
+      "n": 43,
+      "sense_coverage": 0.671,
+      "false_sense_rate": 0.333,
+      "format_compliance": 0.86
+    },
+    "id": {
+      "n": 89,
+      "sense_coverage": 0.876,
+      "false_sense_rate": 0.153,
+      "format_compliance": 0.933
+    }
+  },
+  "by_band": {
+    "high": {
+      "n": 101,
+      "sense_coverage": 0.743,
+      "false_sense_rate": 0.311,
+      "format_compliance": 0.901
+    },
+    "mid": {
+      "n": 57,
+      "sense_coverage": 0.731,
+      "false_sense_rate": 0.295,
+      "format_compliance": 0.93
+    },
+    "low": {
+      "n": 22,
+      "sense_coverage": 0.917,
+      "false_sense_rate": 0.083,
+      "format_compliance": 0.955
+    }
+  },
+  "overall": {
+    "n": 180,
+    "sense_coverage": 0.761,
+    "false_sense_rate": 0.278,
+    "format_compliance": 0.917,
+    "errors": 0
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "backend": "claude",
+  "by_language": {
+    "de": {
+      "n": 73,
+      "sense_coverage": 0.611,
+      "false_sense_rate": 0.472,
+      "format_compliance": 0.795
+    },
+    "fr": {
+      "n": 63,
+      "sense_coverage": 0.646,
+      "false_sense_rate": 0.37,
+      "format_compliance": 0.714
+    },
+    "id": {
+      "n": 139,
+      "sense_coverage": 0.879,
+      "false_sense_rate": 0.152,
+      "format_compliance": 0.741
+    }
+  },
+  "by_band": {
+    "high": {
+      "n": 140,
+      "sense_coverage": 0.711,
+      "false_sense_rate": 0.334,
+      "format_compliance": 0.8
+    },
+    "mid": {
+      "n": 96,
+      "sense_coverage": 0.742,
+      "false_sense_rate": 0.297,
+      "format_compliance": 0.708
+    },
+    "low": {
+      "n": 39,
+      "sense_coverage": 0.94,
+      "false_sense_rate": 0.092,
+      "format_compliance": 0.667
+    }
+  },
+  "overall": {
+    "n": 275,
+    "sense_coverage": 0.754,
+    "false_sense_rate": 0.287,
+    "format_compliance": 0.749,
+    "errors": 0
+  }
+}
