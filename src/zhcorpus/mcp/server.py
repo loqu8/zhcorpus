@@ -458,6 +458,7 @@ async def server_stats() -> str:
         "# zhcorpus Server\n",
         f"- **Version**: {_VERSION}",
         f"- **Uptime**: {uptime_str}",
+        f"- **Uptime (seconds)**: {int(uptime_s)}",
         f"- **Corpus DB**: {corpus_path} ({'connected' if corpus_ok else 'not found'})",
         f"- **Dictionary DB**: {dict_path} ({'connected' if dict_ok else 'not found'})",
     ]
