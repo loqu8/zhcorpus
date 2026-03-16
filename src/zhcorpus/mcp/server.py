@@ -67,7 +67,7 @@ Wiktextract (multi), JMdict (ja), MiniMax translations (ar, es, fa, hi, ko, pt, 
 - All data stays local. The server binds to localhost only.
 """
 
-mcp = FastMCP("zhcorpus", instructions=_INSTRUCTIONS)
+mcp = FastMCP("zhcorpus", instructions=_INSTRUCTIONS, stateless_http=True)
 
 # ---------------------------------------------------------------------------
 # Global state — configured lazily
