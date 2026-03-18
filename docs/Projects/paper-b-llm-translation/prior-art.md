@@ -1,7 +1,7 @@
 # Paper B: LLM Multilingual Dictionary Translation — Prior Art
 
 ## Our Claim
-A single LLM (MiniMax M2.5) can translate 428K Chinese headwords into 12 languages for ~$100 total, with prompt engineering solving CJK leaks, kanji echo, and Hangul purity.
+A single LLM (MiniMax M2.5) can translate 428K Chinese headwords into 18 languages for ~$150 at list rates, with prompt engineering solving CJK leaks, kanji echo, and Hangul purity.
 
 ## Closest Related Work
 
@@ -24,8 +24,8 @@ A single LLM (MiniMax M2.5) can translate 428K Chinese headwords into 12 languag
 - General literature on prompt engineering for structured output (JSON, tables). No published work on prompt engineering specifically for multilingual dictionary output with CJK contamination prevention.
 
 ## Novelty Assessment
-- **Scale**: 428K headwords × 12 languages is unprecedented. Closest is Pre-Qin (~1K × 2 langs).
-- **Cost**: ~$100 total for complete multilingual dictionary is a strong claim. No comparable cost analysis published.
+- **Scale**: 428K headwords × 18 languages is unprecedented. Closest is Pre-Qin (~1K × 2 langs).
+- **Cost**: ~$150 at list rates (~$20 actual via flat-rate subscription) for complete multilingual dictionary is a strong claim. No comparable cost analysis published.
 - **Prompt engineering for CJK leaks**: Novel problem (Japanese kanji echo, Korean hanja mixing). No prior art on preventing script contamination in multilingual dictionary output.
 - **Weakness**: LLM-generated dictionaries lack the authority of human-curated ones. Need strong quality evaluation to be convincing.
 

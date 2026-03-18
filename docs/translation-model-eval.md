@@ -545,7 +545,7 @@ making it fast and clean.
 | Retry pass | 53,471 remaining | +616,276 | 92m | 5.4/s |
 | Backfill pass | 82,550 partial | +103,300 | 92m | 14.0/s |
 
-### Final Coverage
+### Final Coverage (12-language phase)
 
 - **428,073** headwords, **5,130,189** definitions, **12 languages**
 - **422,198 (98.6%)** headwords with full 12-language coverage
@@ -558,3 +558,23 @@ making it fast and clean.
 `tools/dictmaster/backfill_langs.py` — context-aware gap filler that sends existing
 translations as read-only context so new definitions stay consistent. See
 `docs/translation-backfill-plan.md` for full details.
+
+## 18-Language Expansion (2026-03-09)
+
+Added 6 new target languages: nl (Dutch), pt (Portuguese), ar (Arabic), th (Thai),
+hi (Hindi), it (Italian). Main translation run produced ~99K defs per new language.
+
+### MiniMax API Outage (2026-03-09)
+
+The MiniMax API experienced a brief outage on March 9, returning errors for all calls.
+The API recovered later the same day and backfill resumed. No status page or incident
+communication was available from MiniMax.
+
+**Lesson learned**: MiniMax M2.5 remains the best cost/quality option, but have a
+fallback provider ready (Fireworks with MiniMax M2.1, or Kimi K2 on Groq Dev) for
+time-sensitive runs in case of outages.
+
+### Backfill Status (in progress)
+
+329,122 headwords × 6 languages = 1,974,732 definition slots to fill.
+Running with 20 workers at ~3.6 entries/s (estimated ~25 hours).

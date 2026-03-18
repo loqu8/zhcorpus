@@ -32,8 +32,11 @@ class TestNormalizePinyin:
         assert normalize_pinyin("nü3") == "nv3"
         assert normalize_pinyin("lü4") == "lv4"
 
-    def test_lowercase(self):
-        assert normalize_pinyin("Zhong1 Guo2") == "zhong1 guo2"
+    def test_case_preserved(self):
+        # Case is preserved — CC-CEDICT uses caps for surnames/proper nouns
+        assert normalize_pinyin("Zhong1 Guo2") == "Zhong1 Guo2"
+        assert normalize_pinyin("he2") == "he2"
+        assert normalize_pinyin("He2") == "He2"
 
     def test_normalize_whitespace(self):
         assert normalize_pinyin("zhong1  guo2") == "zhong1 guo2"
@@ -117,6 +120,21 @@ class TestReconcileHeadwords:
 
         merged = reconcile_headwords(db)
         assert merged == 0
+
+    def test_no_merge_case_distinguished_pinyin(self, db):
+        """He2 (surname) and he2 (common word) must NOT be merged."""
+        id1 = upsert_headword(db, "和", "和", "He2")
+        id2 = upsert_headword(db, "和", "和", "he2")
+        upsert_definition(db, id1, "en", "surname He", "cedict")
+        upsert_definition(db, id2, "en", "and; together with; harmonious", "cedict")
+        db.commit()
+
+        merged = reconcile_headwords(db)
+        assert merged == 0
+
+        # Both headwords must survive
+        hw_count = db.execute("SELECT COUNT(*) FROM headwords").fetchone()[0]
+        assert hw_count == 2
 
 
 class TestFillPos:

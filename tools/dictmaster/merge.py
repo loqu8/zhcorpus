@@ -17,16 +17,19 @@ def normalize_pinyin(pinyin: str) -> str:
     Normalizations:
     - u: -> v (CEDICT convention for ü)
     - Strip extra whitespace
-    - Lowercase
     - Normalize tone number placement
+
+    Case is PRESERVED because CC-CEDICT uses initial caps to distinguish
+    surnames/proper nouns from common words (e.g., He2 = surname He vs
+    he2 = and/harmonious). Lowercasing collapses these distinct headwords.
 
     Examples:
         "lu:4" -> "lv4"
         "nü3" -> "nv3"
         "zhong1  guo2" -> "zhong1 guo2"
-        "Zhong1 Guo2" -> "zhong1 guo2"
+        "Zhong1 Guo2" -> "Zhong1 Guo2"
     """
-    pinyin = pinyin.strip().lower()
+    pinyin = pinyin.strip()
     # u: -> v (CEDICT convention)
     pinyin = pinyin.replace("u:", "v")
     pinyin = pinyin.replace("ü", "v")
@@ -88,8 +91,8 @@ def reconcile_headwords(conn: sqlite3.Connection) -> int:
         JOIN headwords h2 ON h1.traditional = h2.traditional
             AND h1.simplified = h2.simplified
             AND h1.id < h2.id
-        WHERE REPLACE(REPLACE(LOWER(h1.pinyin), 'u:', 'v'), 'ü', 'v')
-            = REPLACE(REPLACE(LOWER(h2.pinyin), 'u:', 'v'), 'ü', 'v')
+        WHERE REPLACE(REPLACE(h1.pinyin, 'u:', 'v'), 'ü', 'v')
+            = REPLACE(REPLACE(h2.pinyin, 'u:', 'v'), 'ü', 'v')
     """).fetchall()
 
     merged = 0

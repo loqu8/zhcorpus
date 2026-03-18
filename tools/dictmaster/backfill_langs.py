@@ -24,6 +24,7 @@ from collections import Counter
 from pathlib import Path
 
 from tools.dictmaster.schema import DEFAULT_DB_PATH, get_connection, ensure_source, upsert_definition
+from tools.dictmaster.script_validator import validate_definition
 from tools.dictmaster.translate.prompts import ALL_TARGET_LANGS, UNIVERSAL_SYSTEM_PROMPT
 
 ALL_LANGS_SET = set(ALL_TARGET_LANGS)
@@ -47,12 +48,24 @@ Rules:
 - Maximum 5 glosses per entry
 - No explanatory notes, no parenthetical qualifiers unless essential
 
-CRITICAL: Every non-Chinese definition must contain ZERO Chinese characters \
-(汉字). If you catch yourself writing 漢字/汉字 in any definition, replace \
-them with the target language equivalent. \
-EXCEPTION: When a headword is a variant or component of another character, you \
-may cite the reference character (e.g. "variant of 夂") — but the rest of the \
-definition must be in the target language only.
+SCRIPT PURITY (strictly enforced — output that violates these rules will be \
+rejected and discarded):
+
+1. Each definition must use ONLY the script of its target language.
+2. Do NOT copy Latin-script words (English, French, pinyin) into Arabic (ar), \
+Persian (fa), Hindi (hi), or Thai (th) definitions. Translate everything into \
+the target script. If the existing English definition contains "(Taiwanese, \
+pr. [king])" — write the Arabic equivalent in Arabic script, or omit the \
+parenthetical entirely.
+3. Do NOT copy Cyrillic (Russian) words into non-Russian definitions.
+4. Do NOT copy Hangul into Japanese or kana into Korean definitions.
+5. EXCEPTION: When a headword is a variant or component of another character, \
+you may cite the reference character (e.g. "variant of 夂") — but the rest \
+of the definition must be in the target language script only.
+6. For ar/fa: pinyin readings like "pou3" must be omitted or transliterated \
+into Arabic script. Do NOT leave them in Latin.
+7. For ar/fa: the letters X, T, U used as shape descriptors (e.g. "T-shaped") \
+are acceptable as single letters only.
 
 Language-specific rules:
 - ja (Japanese): Provide the MEANING in Japanese, not just kanji echo or kana \
@@ -61,16 +74,21 @@ Japanese vocabulary.
 - ko (Korean): Write in Hangul only. Do NOT mix in Chinese characters (漢字/한자).
 - tl (Tagalog): Use natural Tagalog vocabulary. Do NOT produce literal \
 word-for-word translations from English.
-- fa (Persian): Write definitions in Persian script (فارسی). Use native Persian \
-vocabulary. Do NOT mix in Latin script or other languages.
+- fa (Persian): Write definitions in Persian script (فارسی) ONLY. Every word \
+must be in Persian script. Do NOT include any Latin letters, English words, or \
+pinyin. If the existing definition mentions a pronunciation in brackets, \
+translate or omit it.
 - vi (Vietnamese): Write in Vietnamese with proper diacritics. Do NOT include \
 Chinese characters.
-- ar (Arabic): Write in Arabic script only. Do NOT mix in Latin words from \
-other languages (French, Spanish, English). Use proper Arabic equivalents.
-- th (Thai): Write in Thai script with proper tone marks. Do NOT transliterate \
-from English.
-- hi (Hindi): Write in Devanagari script. Use native Hindi vocabulary, not \
-English transliterations.
+- ar (Arabic): Write in Arabic script ONLY. Every word must be in Arabic \
+script. Do NOT include any Latin letters, English words, French words, or \
+pinyin. Translate all parenthetical notes into Arabic.
+- th (Thai): Write in Thai script ONLY. Translate all parenthetical notes into \
+Thai. Do NOT leave English or Latin words.
+- hi (Hindi): Write in Devanagari script ONLY. Do NOT include English \
+transliterations or Arabic script.
+- ru (Russian): Write in Cyrillic script. Do NOT include Chinese characters \
+(漢字) in the definition — describe the referenced character instead.
 - nl (Dutch): Write in standard Dutch. Use natural Dutch compounds and phrasing.
 - pt (Portuguese): Write in Brazilian Portuguese. Use proper diacritics.
 - it (Italian): Write in standard Italian."""
@@ -344,14 +362,20 @@ def run_backfill(
         response = _chat(BACKFILL_SYSTEM_PROMPT, prompt, max_tokens=min(max_tokens, 8192))
         return parse_backfill_response(response, len(batch), batch)
 
+    rejected_defs = 0
+
     def _save_results(batch: list[dict], results: list[dict[str, str]]):
-        nonlocal filled_defs, filled_entries
+        nonlocal filled_defs, filled_entries, rejected_defs
         for entry, lang_defs in zip(batch, results):
             if not lang_defs:
                 continue
             saved_any = False
             for lang, defn in lang_defs.items():
                 if defn and lang in entry["missing_langs"]:
+                    ok, bad_scripts = validate_definition(lang, defn)
+                    if not ok:
+                        rejected_defs += 1
+                        continue
                     existing = conn.execute(
                         "SELECT 1 FROM definitions WHERE headword_id = ? AND lang = ? AND source = 'minimax'",
                         (entry["headword_id"], lang),
@@ -372,9 +396,10 @@ def run_backfill(
         rate = processed / elapsed if elapsed > 0 else 0
         remaining = total - processed
         eta = remaining / rate if rate > 0 else 0
+        rej_str = f", {rejected_defs:,} rejected" if rejected_defs else ""
         print(
             f"    [{processed:,}/{total:,}] "
-            f"{filled_entries:,} entries, {filled_defs:,} defs filled "
+            f"{filled_entries:,} entries, {filled_defs:,} defs filled{rej_str} "
             f"({rate:.1f} entries/s, ETA {eta / 60:.1f}m)",
             flush=True,
         )

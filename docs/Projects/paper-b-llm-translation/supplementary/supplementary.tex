@@ -1,0 +1,261 @@
+% Supplementary Materials: Dictionarium Sinicum
+% Compile with LuaLaTeX
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[review]{acl}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{float}  % for [H] placement
+
+% Font setup for LuaLaTeX
+\usepackage[english,bidi=default]{babel}
+\babelfont{rm}{TeXGyreTermesX}
+
+% CJK
+\usepackage{luatexja-fontspec}
+\setmainjfont{Noto Serif CJK SC}
+
+% Prevent luatexja from inserting inter-character spacing around Cyrillic
+\ltjsetparameter{jacharrange={-2}}
+
+% Korean
+\babelprovide[import]{korean}
+\babelfont[*hangul]{rm}{Noto Serif CJK KR}
+
+% Thai
+\babelprovide[import]{thai}
+\babelfont[*thai]{rm}{Noto Sans Thai}
+
+% Devanagari (Hindi)
+\babelprovide[import]{hindi}
+\babelfont[*devanagari]{rm}{Noto Sans Devanagari}
+
+% Russian / Cyrillic — direct font, babel doesn't switch in tables
+\newfontfamily\cyrfont{Noto Serif}
+
+% Arabic — babel with proper bidi support
+\babelprovide[import]{arabic}
+\babelfont[*arabic]{rm}{Noto Sans Arabic}
+
+\title{Supplementary Materials:\\Dictionarium Sinicum}
+\author{Anonymous}
+
+% Helper commands for script switching inside tables
+\newcommand{\ru}[1]{{\cyrfont #1}}
+\newcommand{\ar}[1]{\foreignlanguage{arabic}{#1}}
+\newcommand{\hi}[1]{\foreignlanguage{hindi}{#1}}
+\newcommand{\thi}[1]{\foreignlanguage{thai}{#1}}
+
+% Allow multiple table* floats per page
+\setcounter{dbltopnumber}{3}
+\renewcommand{\dbltopfraction}{0.9}
+
+\begin{document}
+\maketitle
+
+\section{Sample Dictionary Entries}
+
+We present three sample entries spanning common vocabulary, concrete nouns, and culturally significant loanword sources.
+Each entry shows definitions from community dictionaries and LLM-generated glosses across 18 languages.
+
+\subsection{你好 [nǐ hǎo] --- Common Greeting}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{llp{3.6cm}}
+\toprule
+\textbf{Lang} & \textbf{Source} & \textbf{Definition} \\
+\midrule
+en & cedict & hello; hi \\
+de & handedict & Hallo! / Guten Tag! \\
+de & minimax & Hallo!; Guten Tag! \\
+fr & cfdict & bonjour / salut \\
+fr & minimax & bonjour; salut \\
+es & chedicc & hola; ¿qué tal? \\
+id & cidict & halo; hai \\
+ja & jmdict & ニーハオ \\
+ja & minimax & こんにちは \\
+ko & minimax & 안녕; 안녕하세요 \\
+ru & minimax & \ru{привет} \\
+vi & minimax & xin chào; chào \\
+tl & minimax & hello; kamusta \\
+sv & minimax & hej; hallå \\
+nl & minimax & hallo; dag \\
+pt & minimax & olá; oi \\
+it & minimax & ciao; buongiorno \\
+ar & minimax & \ar{مرحبا} / \ar{أهلا} \\
+th & minimax & \thi{สวัสดี} \\
+hi & minimax & \hi{नमस्ते}; \hi{हेलो} \\
+fa & minimax & \ar{سلام} \\
+\bottomrule
+\end{tabular}
+\caption{Dictionary entry for 你好 \textit{nǐ hǎo} (hello). All 18 target languages: community sources and MiniMax glosses spanning Latin, CJK, Cyrillic, Arabic, Thai, and Devanagari scripts.}
+\label{tab:nihao}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{llll}
+\toprule
+\textbf{Headword} & \textbf{Meaning} & \textbf{Cantonese} & \textbf{Hokkien} \\
+\midrule
+你好 & hello    & \textit{nei5 hou2}   & \textit{lí hó} \\
+银行 & bank     & \textit{ngan4 hong4}  & \textit{gîn-hâng} \\
+豆腐 & tofu     & \textit{dau6 fu6}     & \textit{tāu-hū} \\
+\bottomrule
+\end{tabular}
+\caption{Dialect forms for the three sample entries. Cantonese in Jyutping romanization, Hokkien in POJ.}
+\label{tab:dialect-samples}
+\end{table}
+
+\subsection{银行 [yín háng] --- Bank}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{llp{3.6cm}}
+\toprule
+\textbf{Lang} & \textbf{Source} & \textbf{Definition} \\
+\midrule
+en & cedict & bank \\
+en & wiktextract & bank (financial institution); jewellery dealer \\
+de & handedict & Bank (S, Wirtsch) \\
+fr & cfdict & banque \\
+id & cidict & bank \\
+ja & jmdict & ぎんこう \\
+ko & minimax & 은행; 금융 기관 \\
+es & minimax & banco \\
+ru & minimax & \ru{банк} \\
+vi & minimax & ngân hàng \\
+tl & minimax & bangko \\
+th & minimax & \thi{ธนาคาร} \\
+ar & minimax & \ar{مصرف} / \ar{بنك} \\
+hi & minimax & \hi{बैंक} \\
+\bottomrule
+\end{tabular}
+\caption{Dictionary entry for 银行 (bank). Community sources + selected MiniMax languages.}
+\end{table}
+
+\subsection{豆腐 [dòu fu] --- Tofu (Loanword Source)}
+
+This entry illustrates both the multilingual definitions and the dialect forms that enable loanword tracing across Southeast Asia.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{llp{3.6cm}}
+\toprule
+\textbf{Lang} & \textbf{Source} & \textbf{Definition} \\
+\midrule
+en & cedict & tofu; bean curd \\
+de & handedict & Tofu, Doufu, Bohnenkäse (S, Ess) \\
+fr & cfdict & tofu \\
+id & cidict & tahu; kembang tahu \\
+ja & jmdict & とうふ \\
+ko & minimax & 두부 \\
+tl & minimax & tokwa \\
+vi & minimax & đậu phụ \\
+th & minimax & \thi{เต้าหู้} \\
+\bottomrule
+\end{tabular}
+\caption{Dictionary entry for 豆腐 (tofu).}
+\end{table}
+
+\noindent The Hokkien form \textit{tāu-hū} (Table~\ref{tab:dialect-samples}) is the etymological source for Indonesian \textit{tahu}, Tagalog \textit{tokwa} (via Hokkien \textit{tāu-koaⁿ} ``dried tofu''), and Thai \thi{เต้าหู้}---all visible in the multilingual definitions above.
+
+%% table* floats declared here (during page 1) so they float to page 2 top
+%% and get numbered 5--7 (after the page 1 [H] tables 1--4)
+
+%% MT baseline — full-width, 3 metric groups side-by-side
+\begin{table*}[t]
+\centering
+\footnotesize
+\begin{tabular}{lrccc@{\hskip 1.5em}rccc@{\hskip 1.5em}rccc}
+\toprule
+& \multicolumn{4}{c}{\textit{Sense coverage (\%)}} & \multicolumn{4}{c}{\textit{False sense rate (\%)}} & \multicolumn{4}{c}{\textit{Format compliance (\%)}} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9} \cmidrule(l){10-13}
+\textbf{System} & \textbf{n} & \textbf{de} & \textbf{fr} & \textbf{id} & \textbf{n} & \textbf{de} & \textbf{fr} & \textbf{id} & \textbf{n} & \textbf{de} & \textbf{fr} & \textbf{id} \\
+\midrule
+Our pipeline      & 453 & 79.2 & 84.0 & 93.7 & 453 & 19.8 & 14.2 &  6.3 & 453 & ${\sim}$100 & ${\sim}$100 & ${\sim}$100 \\
+MiniMax (generic)  & 177 & 58.3 & 67.8 & 83.6 & 177 & 45.4 & 29.1 & 17.6 & 177 & 97.9 & 86.4 & 89.5 \\
+Claude Sonnet 4    & 275 & 61.1 & 64.6 & 87.9 & 275 & 47.2 & 37.0 & 15.2 & 275 & 79.5 & 71.4 & 74.1 \\
+GPT-4o-mini        & 275 & 52.2 & 61.9 & 83.8 & 275 & 52.9 & 41.3 & 17.4 & 275 & 78.1 & 73.0 & 72.7 \\
+Google Translate   & 275 & 52.4 & 60.1 & 85.5 & 275 & 51.6 & 36.5 & 13.5 & 275 & 76.7 & 74.6 & 68.3 \\
+DeepL              & 275 & 49.3 & 52.4 & 83.9 & 275 & 54.4 & 47.2 & 15.7 & 275 & 75.3 & 68.3 & 68.3 \\
+Azure Translator   & 275 & 48.7 & 60.3 & 86.4 & 275 & 53.0 & 39.1 & 12.9 & 275 & 72.6 & 68.3 & 68.3 \\
+\bottomrule
+\end{tabular}
+\caption{Per-language MT baseline breakdown across three metrics. Our pipeline's advantage is most pronounced on German, where baselines score 20--30 points lower on sense coverage. Format compliance measures adherence to CEDICT-style gloss lists.}
+\label{tab:mt-detail}
+\end{table*}
+
+%% Back-translation + Judge — side by side
+\begin{table*}[t]
+\centering
+\footnotesize
+\begin{tabular}{lrcc@{\hskip 3em}lrccc}
+\toprule
+\multicolumn{4}{c}{\textit{Back-translation evaluation (\%)}} & \multicolumn{5}{c}{\textit{LLM-as-judge scores (1--5)}} \\
+\cmidrule(r){1-4} \cmidrule(l){5-9}
+\textbf{Language} & \textbf{n} & \textbf{Sense} & \textbf{False} &
+\textbf{Language} & \textbf{n} & \textbf{Acc.} & \textbf{Nat.} & \textbf{Comp.} \\
+\midrule
+Spanish    & 126 & 79.0 & 20.2 & Russian    &  6 & 4.75 & 4.50 & 3.75 \\
+Portuguese & 123 & 75.2 & 22.3 & Arabic     &  3 & 4.67 & 4.50 & 4.00 \\
+Italian    & 122 & 74.7 & 25.4 & Spanish    &  8 & 4.56 & 4.44 & 4.00 \\
+Swedish    & 118 & 74.2 & 24.2 & Dutch      & 12 & 4.54 & 4.58 & 3.58 \\
+Russian    & 123 & 71.3 & 29.4 & Portuguese & 10 & 4.50 & 4.50 & 3.35 \\
+Dutch      & 125 & 69.7 & 28.2 & Vietnamese & 10 & 4.50 & 4.30 & 3.60 \\
+Persian    & 128 & 67.6 & 31.6 & Swedish    &  6 & 4.42 & 4.58 & 3.50 \\
+Thai       & 113 & 66.8 & 31.4 & Persian    &  8 & 4.25 & 4.56 & 3.00 \\
+Vietnamese & 107 & 65.4 & 28.2 & Korean     &  6 & 4.25 & 4.33 & 2.92 \\
+Arabic     & 129 & 65.3 & 34.7 & Italian    &  6 & 4.00 & 4.08 & 2.92 \\
+Hindi      & 128 & 63.4 & 32.3 & Thai       &  7 & 4.07 & 4.36 & 3.14 \\
+Tagalog    & 110 & 61.7 & 34.1 & Hindi      & 13 & 4.04 & 3.77 & 3.04 \\
+Korean     & 119 & 60.0 & 38.2 & Tagalog    &  5 & 3.90 & 3.60 & 3.60 \\
+\midrule
+\textbf{Overall} & \textbf{1{,}571} & \textbf{68.9} & \textbf{29.2} &
+\textbf{Overall} & \textbf{100} & \textbf{4.34} & \textbf{4.31} & \textbf{3.38} \\
+\bottomrule
+\end{tabular}
+\caption{Evaluation of 13 non-community languages. Left: back-translation sense coverage. Right: LLM-as-judge quality scores (accuracy, naturalness, completeness). Judges: Claude Sonnet~4, Kimi~K2, GPT-OSS-120B, DeepSeek~V3.1. Mean pairwise inter-judge disagreement: 0.64~points.}
+\label{tab:backtrans-judge}
+\end{table*}
+
+%% Eval scripts — full-width
+\begin{table*}[t]
+\centering
+\footnotesize
+\begin{tabular}{lp{11cm}}
+\toprule
+\textbf{Script} & \textbf{Purpose} \\
+\midrule
+\texttt{eval\_community\_comparison.py} & Core evaluation against 4 community dictionaries (de, fr, id). Shared stratified sampling and metrics. \\
+\texttt{eval\_mt\_baseline.py} & MT baselines: MiniMax generic prompt, Google Translate, DeepL, Azure, Claude Sonnet~4, GPT-4o-mini. \\
+\texttt{eval\_multi\_model.py} & Free LLM comparison via Groq, Cerebras, and SambaNova inference providers. \\
+\texttt{eval\_backtranslation.py} & Back-translation round-trip + LLM-as-judge quality scoring for 13 non-community languages. \\
+\bottomrule
+\end{tabular}
+\caption{Evaluation script manifest. All require Python~3.11+ and a populated \texttt{dictmaster.db}. Results in \texttt{eval-results/} (JSON).}
+\label{tab:scripts}
+\end{table*}
+
+%% ============================================================
+\section{Evaluation Details}
+
+Tables~\ref{tab:mt-detail}--\ref{tab:scripts} present the full evaluation results and script manifest.
+All raw results are provided as JSON in \texttt{eval-results/}.
+
+\smallskip
+\noindent\textbf{Sampling.}
+Headwords are stratified by frequency (high: $\geq$100 articles, mid: 10--99, low: 1--9, rare: 0), 50 per band, \texttt{seed=42}, yielding ${\sim}$275 evaluation pairs across de/fr/id.
+
+\smallskip
+\noindent\textbf{Reproducibility.}
+MiniMax M2.5 (\texttt{abab7-chat-preview}) via \texttt{api.minimax.chat}; \$0.30/M input, \$1.20/M output.
+Database: 428K headwords $\times$ 18 languages in SQLite.
+MT baselines: Google Translate v2, DeepL Free, Azure Translator v3, Claude Sonnet~4, GPT-4o-mini; free LLMs via Groq, Cerebras, SambaNova.
+
+\end{document}

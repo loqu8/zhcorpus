@@ -1,0 +1,167 @@
+{
+  "Kimi K2": {
+    "model_id": "moonshotai/kimi-k2-instruct",
+    "provider": "groq",
+    "label": "Kimi K2",
+    "by_language": {
+      "de": {
+        "n": 39,
+        "sense_coverage": 0.547,
+        "false_sense_rate": 0.493,
+        "format_compliance": 0.846
+      },
+      "fr": {
+        "n": 36,
+        "sense_coverage": 0.639,
+        "false_sense_rate": 0.432,
+        "format_compliance": 0.75
+      },
+      "id": {
+        "n": 42,
+        "sense_coverage": 0.838,
+        "false_sense_rate": 0.15,
+        "format_compliance": 0.857
+      }
+    },
+    "overall": {
+      "n": 117,
+      "sense_coverage": 0.68,
+      "false_sense_rate": 0.351,
+      "format_compliance": 0.821,
+      "errors": 11,
+      "time_s": 109.6
+    }
+  },
+  "GPT-OSS-120B": {
+    "model_id": "openai/gpt-oss-120b",
+    "provider": "groq",
+    "label": "GPT-OSS-120B",
+    "by_language": {
+      "de": {
+        "n": 8,
+        "sense_coverage": 0.542,
+        "false_sense_rate": 0.604,
+        "format_compliance": 0.875
+      },
+      "fr": {
+        "n": 7,
+        "sense_coverage": 0.833,
+        "false_sense_rate": 0.298,
+        "format_compliance": 1.0
+      },
+      "id": {
+        "n": 8,
+        "sense_coverage": 0.958,
+        "false_sense_rate": 0.042,
+        "format_compliance": 1.0
+      }
+    },
+    "overall": {
+      "n": 23,
+      "sense_coverage": 0.775,
+      "false_sense_rate": 0.315,
+      "format_compliance": 0.957,
+      "errors": 11,
+      "time_s": 13.9
+    }
+  },
+  "Qwen3-235B": {
+    "model_id": "qwen-3-235b-a22b-instruct-2507",
+    "provider": "cerebras",
+    "label": "Qwen3-235B",
+    "by_language": {
+      "de": {
+        "n": 12,
+        "sense_coverage": 0.486,
+        "false_sense_rate": 0.646,
+        "format_compliance": 0.833
+      },
+      "fr": {
+        "n": 10,
+        "sense_coverage": 0.783,
+        "false_sense_rate": 0.367,
+        "format_compliance": 0.7
+      },
+      "id": {
+        "n": 11,
+        "sense_coverage": 0.712,
+        "false_sense_rate": 0.265,
+        "format_compliance": 0.818
+      }
+    },
+    "overall": {
+      "n": 33,
+      "sense_coverage": 0.652,
+      "false_sense_rate": 0.434,
+      "format_compliance": 0.788,
+      "errors": 11,
+      "time_s": 7.6
+    }
+  },
+  "DeepSeek V3.1": {
+    "model_id": "DeepSeek-V3.1",
+    "provider": "sambanova",
+    "label": "DeepSeek V3.1",
+    "by_language": {
+      "de": {
+        "n": 14,
+        "sense_coverage": 0.595,
+        "false_sense_rate": 0.536,
+        "format_compliance": 0.857
+      },
+      "fr": {
+        "n": 12,
+        "sense_coverage": 0.819,
+        "false_sense_rate": 0.354,
+        "format_compliance": 0.75
+      },
+      "id": {
+        "n": 13,
+        "sense_coverage": 0.763,
+        "false_sense_rate": 0.192,
+        "format_compliance": 0.846
+      }
+    },
+    "overall": {
+      "n": 39,
+      "sense_coverage": 0.72,
+      "false_sense_rate": 0.365,
+      "format_compliance": 0.821,
+      "errors": 11,
+      "time_s": 38.5
+    }
+  },
+  "Llama 4 Scout": {
+    "model_id": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "provider": "groq",
+    "label": "Llama 4 Scout",
+    "by_language": {
+      "de": {
+        "n": 11,
+        "sense_coverage": 0.53,
+        "false_sense_rate": 0.745,
+        "format_compliance": 0.636
+      },
+      "fr": {
+        "n": 9,
+        "sense_coverage": 0.815,
+        "false_sense_rate": 0.398,
+        "format_compliance": 0.778
+      },
+      "id": {
+        "n": 10,
+        "sense_coverage": 0.75,
+        "false_sense_rate": 0.3,
+        "format_compliance": 0.8
+      }
+    },
+    "overall": {
+      "n": 30,
+      "sense_coverage": 0.689,
+      "false_sense_rate": 0.492,
+      "format_compliance": 0.733,
+      "errors": 11,
+      "time_s": 8.7
+    }
+  }
+}
