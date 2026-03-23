@@ -75,45 +75,137 @@ def merge_pos(existing: Optional[str], new: Optional[str]) -> Optional[str]:
     return existing or new
 
 
+def _pinyin_merge_key(pinyin: str) -> str:
+    """Build a merge key from pinyin for duplicate detection.
+
+    Two pinyin strings that produce the same merge key are considered
+    duplicates and will be merged.  The key strips spaces, hyphens, tone
+    numbers, and normalizes u:/ü → v so that character-level pinyin
+    (CC-CEDICT style, e.g. "dong4 tai4 zhu4 ci2") matches word-level
+    pinyin (Wiktextract style, e.g. "dongtai4 zhuci2").
+
+    Tone numbers must be stripped because Wiktextract omits intermediate
+    tones within compound words (dongtai4 = dong+tai4, losing dong's tone).
+
+    Case IS preserved so that He2 (surname) ≠ he2 (common word).
+    """
+    key = pinyin.replace(" ", "")
+    key = key.replace("u:", "v").replace("ü", "v")
+    key = key.replace("-", "")
+    # Strip tone numbers — Wiktextract drops intermediate tones in compounds
+    key = re.sub(r"[0-9]", "", key)
+    # Strip parenthesized annotations like (ei¹)
+    key = re.sub(r"\([^)]*\)", "", key)
+    return key
+
+
 def reconcile_headwords(conn: sqlite3.Connection) -> int:
-    """Reconcile headwords that may have been inserted with different pinyin normalization.
+    """Reconcile headwords that may have been inserted with different pinyin.
 
     Finds headwords where (traditional, simplified) match but pinyin differs only
-    by normalization. Merges definitions to the canonical (first-inserted) headword.
+    by normalization or spacing.  Merges definitions to the canonical
+    (first-inserted) headword.
+
+    Handled differences:
+    - u:/ü normalization (lu:4 ↔ lv4)
+    - Spacing (dong4 tai4 zhu4 ci2 ↔ dongtai4 zhuci2)
+    - Hyphens (yibai-mi3 ↔ yibaimi3)
+
+    Case differences are NOT merged (He2 ≠ he2).
 
     Returns number of headwords merged.
     """
-    # Find potential duplicates: same trad+simp but different pinyin
-    dupes = conn.execute("""
-        SELECT h1.id AS keep_id, h2.id AS merge_id,
-               h1.pinyin AS keep_pinyin, h2.pinyin AS merge_pinyin
-        FROM headwords h1
-        JOIN headwords h2 ON h1.traditional = h2.traditional
-            AND h1.simplified = h2.simplified
-            AND h1.id < h2.id
-        WHERE REPLACE(REPLACE(h1.pinyin, 'u:', 'v'), 'ü', 'v')
-            = REPLACE(REPLACE(h2.pinyin, 'u:', 'v'), 'ü', 'v')
+    # Find all groups with multiple pinyin variants for the same trad+simp
+    groups = conn.execute("""
+        SELECT traditional, simplified
+        FROM headwords
+        GROUP BY traditional, simplified
+        HAVING COUNT(*) > 1
     """).fetchall()
 
     merged = 0
-    for row in dupes:
-        keep_id = row["keep_id"]
-        merge_id = row["merge_id"]
+    for group in groups:
+        trad, simp = group["traditional"], group["simplified"]
+        rows = conn.execute(
+            "SELECT id, pinyin FROM headwords "
+            "WHERE traditional = ? AND simplified = ? ORDER BY id",
+            (trad, simp),
+        ).fetchall()
 
-        # Move definitions to the canonical headword
-        conn.execute(
-            "UPDATE OR IGNORE definitions SET headword_id = ? WHERE headword_id = ?",
-            (keep_id, merge_id),
-        )
-        # Delete orphaned definitions (UNIQUE constraint violations)
-        conn.execute("DELETE FROM definitions WHERE headword_id = ?", (merge_id,))
-        # Delete the duplicate headword
-        conn.execute("DELETE FROM headwords WHERE id = ?", (merge_id,))
-        merged += 1
+        # Group by merge key — keep the first (lowest id) in each group
+        seen: dict[str, int] = {}  # merge_key -> keep_id
+        for row in rows:
+            key = _pinyin_merge_key(row["pinyin"])
+            if key not in seen:
+                seen[key] = row["id"]
+            else:
+                keep_id = seen[key]
+                merge_id = row["id"]
+                # Move definitions to the canonical headword
+                conn.execute(
+                    "UPDATE OR IGNORE definitions SET headword_id = ? WHERE headword_id = ?",
+                    (keep_id, merge_id),
+                )
+                # Move dialect forms too
+                conn.execute(
+                    "UPDATE OR IGNORE dialect_forms SET headword_id = ? WHERE headword_id = ?",
+                    (keep_id, merge_id),
+                )
+                # Delete orphaned definitions/dialect_forms (UNIQUE constraint violations)
+                conn.execute("DELETE FROM definitions WHERE headword_id = ?", (merge_id,))
+                conn.execute("DELETE FROM dialect_forms WHERE headword_id = ?", (merge_id,))
+                # Delete the duplicate headword
+                conn.execute("DELETE FROM headwords WHERE id = ?", (merge_id,))
+                merged += 1
 
     if merged:
         conn.commit()
     return merged
+
+
+# Languages that use non-Latin scripts — definitions should not contain [A-Za-z]
+_NON_LATIN_LANGS = {"ar", "fa", "hi", "th", "ko", "ja", "el", "ru"}
+
+# Regex: one or more Latin letters (catches mixed-script artifacts)
+_LATIN_RE = re.compile(r"[A-Za-z]")
+
+
+def find_bad_translations(conn: sqlite3.Connection) -> list[dict]:
+    """Find MiniMax translations with quality issues.
+
+    Checks for:
+    - Non-Latin-script languages containing Latin characters (e.g. Arabic with "Aspect")
+    - Extremely short definitions (≤2 chars) that are likely truncated
+
+    Returns list of dicts with headword_id, lang, definition, issue.
+    """
+    issues: list[dict] = []
+
+    # Non-Latin languages with Latin character contamination
+    placeholders = ",".join("?" for _ in _NON_LATIN_LANGS)
+    rows = conn.execute(
+        f"SELECT d.id, d.headword_id, d.lang, d.definition, h.traditional "
+        f"FROM definitions d JOIN headwords h ON d.headword_id = h.id "
+        f"WHERE d.source = 'minimax' AND d.lang IN ({placeholders})",
+        list(_NON_LATIN_LANGS),
+    ).fetchall()
+
+    for row in rows:
+        defn = row["definition"]
+        if _LATIN_RE.search(defn):
+            # Allow parenthesized romanization like (zhe, le, guo)
+            stripped = re.sub(r"\([^)]*\)", "", defn)
+            if _LATIN_RE.search(stripped):
+                issues.append({
+                    "def_id": row["id"],
+                    "headword_id": row["headword_id"],
+                    "traditional": row["traditional"],
+                    "lang": row["lang"],
+                    "definition": defn,
+                    "issue": "latin_in_non_latin_script",
+                })
+
+    return issues
 
 
 def fill_pos_from_definitions(conn: sqlite3.Connection) -> int:
