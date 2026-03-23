@@ -95,6 +95,15 @@ VALID_SCRIPTS: dict[str, set[str]] = {
 
     "ja": {"cjk", "kana", "latin"},
     "ko": {"cjk", "hangul", "latin"},
+
+    "tr": {"latin"},
+    "ms": {"latin"},
+    "pl": {"latin"},
+    "hu": {"latin"},
+    "cs": {"latin"},
+    "el": {"greek", "latin"},
+    "ro": {"latin"},
+    "et": {"latin"},
 }
 
 
@@ -145,7 +154,7 @@ _REF_PATTERNS = [
     re.compile(rf'(?:baryante|pagdadaglat|bahagi|karakter|notasyon|anyo)\s.*?({_CJK_RUN})', re.IGNORECASE),
 
     # Russian
-    re.compile(rf'(?:вариант|сокращение|компонент|иероглиф|запись|форм)\s.*?({_CJK_RUN})', re.IGNORECASE),
+    re.compile(rf'(?:вариант|сокращение|компонент|иероглиф|запись|форм\w*)\s.*?({_CJK_RUN})', re.IGNORECASE),
 
     # Japanese — 異体字 / 略字 / の variant patterns
     re.compile(rf'({_CJK_RUN})の(?:異体字|旧字体|略字|別字|俗字|本字|正字)'),
@@ -170,11 +179,40 @@ _REF_PATTERNS = [
     # Thai
     re.compile(rf'(?:รูปแบบ|ตัวย่อ|ส่วนประกอบ|อักษร|แบบ)\s.*?({_CJK_RUN})'),
 
+    # Greek
+    re.compile(rf'(?:παραλλαγή|συντομογραφία|στοιχείο|χαρακτήρας|μορφή|σύντμηση)\s.*?({_CJK_RUN})'),
+
+    # Turkish
+    # Turkish: base forms and suffixed forms (varyantı, karakteri, kısaltması, etc.)
+    re.compile(rf'(?:varyant\w*|kısaltma\w*|bileşen\w*|karakter\w*|biçim\w*|şekil\w*)\s.*?({_CJK_RUN})', re.IGNORECASE),
+
+    # Polish
+    re.compile(rf'(?:wariant|skrót|komponent|znak|forma|zapis)\s.*?({_CJK_RUN})', re.IGNORECASE),
+
+    # Czech
+    re.compile(rf'(?:varianta|zkratka|složka|znak|forma|zápis)\s.*?({_CJK_RUN})', re.IGNORECASE),
+
+    # Hungarian
+    re.compile(rf'(?:változat\w*|rövidítés\w*|összetevő\w*|karakter\w*|alak\w*|jelölés\w*)\s.*?({_CJK_RUN})', re.IGNORECASE),
+
+    # Romanian
+    re.compile(rf'(?:variantă|abreviere|componentă|caracter|formă|notație)\s.*?({_CJK_RUN})', re.IGNORECASE),
+
+    # Estonian
+    re.compile(rf'(?:variant\w*|lühend\w*|komponent\w*|märk\w*|vorm\w*|tähistus\w*|koostisosa\w*|variandi\w*)[/\s].*?({_CJK_RUN})', re.IGNORECASE),
+    # CJK followed by Estonian variandina/koostisosa (reverse word order)
+    re.compile(rf'({_CJK_RUN})\s+(?:variandi\w*|koostisosa\w*)', re.IGNORECASE),
+
+    # Malay
+    re.compile(rf'(?:varian|singkatan|komponen|aksara|bentuk|notasi)\s.*?({_CJK_RUN})', re.IGNORECASE),
+
     # Bare "of X" — catches "variant of 夂", "componente de 巽", etc.
     re.compile(rf'(?:of|de|di|von|van|av|dari|ng|của|의|の|ของ|для|für|pour|para|per|för)\s+({_CJK_RUN})'),
 
     # "used in X" / "verwendet in X" / "utilisé dans X" — cross-ref to compound
-    re.compile(rf'(?:used|verwendet|utilisé|usado|usato|gebruikt|används|digunakan|ginagamit|dùng|используется|ใช้ใน|يُستخدم في|استفاده در|में प्रयुक्त|ใช้ใน)\s*({_CJK_RUN})', re.IGNORECASE),
+    # Allow up to 3 words between keyword and CJK (e.g. "używany w złożeniach 瑽瑢")
+    # používá se = Czech verb form, kullanılır = Turkish passive, yalnızca = Turkish "only"
+    re.compile(rf'(?:used|verwendet|utilisé|usado|usato|gebruikt|används|digunakan|ginagamit|dùng|используется|ใช้ใน|يُستخدم في|استفاده در|में प्रयुक्त|ใช้ใน|kullanıl\w*|używany|używane|używana|używano|používá\w*|používaný|használ\w*|utilizat|kasutatav|digunakan|χρησιμοποιείται|yalnızca)\s+(?:\w+\s+){{0,3}}({_CJK_RUN})', re.IGNORECASE),
 
     # Prepositions that immediately precede CJK: "في X", "در X"
     re.compile(rf'(?:dalam|في|در|trong|ใน)\s+({_CJK_RUN})'),
@@ -183,7 +221,7 @@ _REF_PATTERNS = [
 
     # CJK separated by conjunctions/slashes (躊躇／踌躇, 躊躇 و 踌躇)
     re.compile(rf'({_CJK_RUN})\s*[/／、，,]\s*({_CJK_RUN})'),
-    re.compile(rf'({_CJK_RUN})\s*(?:و|и|dan|at|và|und|et|y|e|och|en|og)\s+({_CJK_RUN})'),
+    re.compile(rf'({_CJK_RUN})\s*(?:and|or|و|и|dan|at|và|und|et|y|e|i|och|en|og|ve|és|a|și|ja|kai|και|lub|nebo|vagy|sau|või|veya)\s+({_CJK_RUN})'),
 
     # "after X" / grammatical context — "(after 得/不)", "setelah 得"
     re.compile(rf'(?:after|nach|après|después|dopo|na|efter|setelah|pagkatapos|sau|後|بعد|के बाद|หลัง)\s+({_CJK_RUN})', re.IGNORECASE),
@@ -191,6 +229,41 @@ _REF_PATTERNS = [
 
     # "name X" patterns for personal/place names with CJK
     re.compile(rf'(?:الاسم|الشخصي|نام|नाम|ชื่อ|이름|名前|nome|nom|name|Name|naam|namn).*?({_CJK_RUN})', re.IGNORECASE),
+
+    # "see X" / "lihat X" — Malay, Indonesian, and other languages
+    # bkz/bakınız = Turkish abbreviation for "see"
+    re.compile(rf'(?:lihat|siehe|voir|ver|vedere|se|zie|tingnan|xem|انظر|देखें|ดู|görünce|patrz|viz|lásd|a se vedea|vaata|βλέπε|bak\w*|bkz)\W*\s*({_CJK_RUN})', re.IGNORECASE),
+
+    # CJK followed by Turkish apostrophe + suffix (e.g. 靠北'nın varyantı, 蓬蓽生輝'ye bakınız)
+    re.compile(rf"({_CJK_RUN})(?:\[[\w]+\])?[''ʼ]\w+\s+(?:varyant\w*|bileşik\w*|bakınız|bak\w*)", re.IGNORECASE),
+    # CJK + Turkish "used in compound" (霹靂 ... bileşik sözcüğünde kullanılır)
+    re.compile(rf'({_CJK_RUN})(?:\s*\([^)]*\))?\s+bileşik\w*\s+\w+\s+kullanıl\w*', re.IGNORECASE),
+
+    # CJK followed by "means/bedeutet/significa" — definition-style cross-ref
+    # e.g. "澒洞 bedeutet weit", "瑽瑢 significa sonido"
+    re.compile(rf'({_CJK_RUN})\s+(?:bedeutet|means|significa|signifie|означает|berarti|bermaksud|หมายถึง|anlamına|znamená|oznacza|jelent|înseamnă|tähendab|σημαίνει)', re.IGNORECASE),
+
+    # "synonym of X" — Polish synonim, Greek συνώνυμο, Romanian sinonim, etc.
+    re.compile(rf'(?:synonym\w*|synonim\w*|sinónim\w*|sinonim\w*|συνώνυμο\w*|синоним\w*|sünonüüm\w*)\s+(?:\w+\s+){{0,3}}({_CJK_RUN})', re.IGNORECASE),
+
+    # "shape of X" — kształt (Polish), tvar (Czech), alak (Hungarian), etc.
+    re.compile(rf'(?:kształt|tvar|shape|forme?|Gestalt|alak|biçim|tüüp)\s+({_CJK_RUN})', re.IGNORECASE),
+
+    # CJK at start followed by descriptor (reverse word order: "埋 régi formája", "比 régi karaktere")
+    re.compile(rf'({_CJK_RUN})\s+(?:régi|alte?|vieille?|antigua?|antiga?|vecchi[ao]|gamla|oude|lama|lumang|cũ|ancien|eski|stara|starý|vechi|vana)\s', re.IGNORECASE),
+    re.compile(rf'({_CJK_RUN})\s+régi\s+\w+', re.IGNORECASE),
+
+    # CJK at start followed by "used in" keyword (reverse word order in new langs)
+    # e.g. "怨埋 kifejezésben használt", "怨埋 wyrażeniu używany"
+    re.compile(rf'({_CJK_RUN})\s+\w+\s+(?:használt|używany|używane|používaný|kullanılan|utilizat|kasutatav|χρησιμοποιείται|gebruikt|utilisé|используется)', re.IGNORECASE),
+
+    # CJK at start followed by "component/character/variant of it" in new langs
+    # e.g. "字 karakterinin bileşeni" (Turkish), "字 karakterinin parçası"
+    re.compile(rf'({_CJK_RUN})\s+\w+\s+(?:bileşeni|parçası|součástí|składnikiem|összetevője|componentă|komponendiks|στοιχείο)', re.IGNORECASE),
+    re.compile(rf'({_CJK_RUN})\s+\w+(?:nin|nın|nun|nün|nin|inin|unun|ünün)\s+\w+', re.IGNORECASE),  # Turkish genitive
+
+    # "используется в X" — allow preposition between keyword and CJK
+    re.compile(rf'используется\s+(?:в|при|для)\s+({_CJK_RUN})'),
 ]
 
 _CJK_RUN_RE = re.compile(_CJK_RUN)

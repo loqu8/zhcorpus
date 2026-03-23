@@ -47,6 +47,9 @@ Rules:
 - For nouns, give the most common equivalent(s)
 - Maximum 5 glosses per entry
 - No explanatory notes, no parenthetical qualifiers unless essential
+- NEVER fall back to English (or any other language) if you don't know the word — \
+paraphrase in the target language instead
+- NEVER output incomplete or truncated words — every word must be complete
 
 SCRIPT PURITY (strictly enforced — output that violates these rules will be \
 rejected and discarded):
@@ -91,7 +94,22 @@ transliterations or Arabic script.
 (漢字) in the definition — describe the referenced character instead.
 - nl (Dutch): Write in standard Dutch. Use natural Dutch compounds and phrasing.
 - pt (Portuguese): Write in Brazilian Portuguese. Use proper diacritics.
-- it (Italian): Write in standard Italian."""
+- it (Italian): Write in standard Italian.
+- tr (Turkish): Use proper Turkish characters (ğ, ş, ç, ı, ö, ü). Do NOT \
+substitute ASCII equivalents. For idioms and set phrases, use the most natural \
+Turkish equivalent — prefer zirve/doruk over literal translations.
+- ms (Malay): Write in standard Malay (Bahasa Melayu). This is NOT Indonesian — \
+use Malaysian vocabulary and conventions (e.g. "kereta" not "mobil" for car).
+- pl (Polish): Use proper Polish diacritics (ą, ć, ę, ł, ń, ó, ś, ź, ż).
+- hu (Hungarian): Use proper Hungarian accents (á, é, í, ó, ö, ő, ú, ü, ű).
+- cs (Czech): Use proper Czech diacritics (á, č, ď, é, ě, í, ň, ó, ř, š, ť, \
+ú, ů, ý, ž).
+- el (Greek): Write in Greek script with proper diacritics (tonos). Do NOT \
+transliterate from English. Write ONLY in Greek script.
+- ro (Romanian): Use proper Romanian diacritics with comma-below (ș, ț), NOT \
+cedilla (ş, ţ). NEVER use English words — always use Romanian equivalents.
+- et (Estonian): Write in standard Estonian. Use proper characters (ä, ö, ü, õ, \
+š, ž)."""
 
 BACKFILL_BATCH_TEMPLATE = """\
 Fill in the MISSING languages for these Chinese dictionary entries.
@@ -252,6 +270,7 @@ def fetch_batch(
     conn: sqlite3.Connection,
     batch_size: int,
     include_zero: bool = False,
+    max_langs: int | None = None,
 ) -> list[dict]:
     """Fetch one batch of headwords needing backfill, with existing defs included.
 
@@ -282,6 +301,8 @@ def fetch_batch(
         present = set(row["existing_langs"].split(",")) if row["existing_langs"] else set()
         present.discard("")
         missing = sorted(ALL_LANGS_SET - present)
+        if max_langs and len(missing) > max_langs:
+            missing = missing[:max_langs]
         entries.append({
             "headword_id": row["id"],
             "traditional": row["traditional"],
@@ -302,6 +323,23 @@ def fetch_batch(
     defs_by_id: dict[int, dict[str, str]] = {hid: {} for hid in ids}
     for r in def_rows:
         defs_by_id[r["headword_id"]][r["lang"]] = r["definition"]
+
+    # For zero-def entries, pull community defs (cedict, etc.) as fallback context
+    zero_ids = [hid for hid in ids if not defs_by_id[hid]]
+    if zero_ids:
+        zero_ph = ",".join("?" * len(zero_ids))
+        fallback_rows = conn.execute(
+            f"SELECT headword_id, lang, definition, source FROM definitions "
+            f"WHERE headword_id IN ({zero_ph}) AND source != 'minimax' "
+            f"ORDER BY headword_id, lang",
+            zero_ids,
+        ).fetchall()
+        for r in fallback_rows:
+            hid, lang = r["headword_id"], r["lang"]
+            # Only use first community def per lang as context (don't overwrite)
+            if lang not in defs_by_id[hid]:
+                defs_by_id[hid][lang] = r["definition"]
+
     for e in entries:
         e["existing_defs"] = defs_by_id[e["headword_id"]]
 
@@ -320,6 +358,7 @@ def run_backfill(
     dry_run: bool = False,
     include_zero: bool = False,
     prompt_version: str = "v2-backfill",
+    max_langs: int | None = None,
 ) -> None:
     """Run the backfill pass.
 
@@ -348,18 +387,30 @@ def run_backfill(
         conn.close()
         return
 
-    print(f"\n  Starting backfill ({workers} workers, batch size {batch_size})...", flush=True)
+    ml_str = f", max {max_langs} langs/entry" if max_langs else ""
+    print(f"\n  Starting backfill ({workers} workers, batch size {batch_size}{ml_str})...", flush=True)
     t_start = time.time()
     filled_defs = 0
     filled_entries = 0
     processed = 0
+
+    def _effective_batch_size(batch_size: int, entries: list[dict]) -> int:
+        """Reduce batch size when entries have many missing langs to avoid SDK timeout."""
+        if not entries:
+            return batch_size
+        avg_missing = sum(len(e["missing_langs"]) for e in entries[:batch_size]) / min(len(entries), batch_size)
+        # Target ~10K max_tokens per request to stay well under the 10-min SDK timeout
+        # 80 tokens per lang per entry → cap at 10K / (avg_missing * 80)
+        if avg_missing > 8:
+            return max(3, int(10000 / (avg_missing * 80)))
+        return batch_size
 
     def _translate_one_batch(batch: list[dict]) -> list[dict[str, str]]:
         """Send a single backfill batch to the API. Thread-safe."""
         prompt = build_backfill_batch_prompt(batch)
         avg_missing = sum(len(e["missing_langs"]) for e in batch) / len(batch)
         max_tokens = max(2048, int(len(batch) * avg_missing * 80))
-        response = _chat(BACKFILL_SYSTEM_PROMPT, prompt, max_tokens=min(max_tokens, 8192))
+        response = _chat(BACKFILL_SYSTEM_PROMPT, prompt, max_tokens=min(max_tokens, 65536))
         return parse_backfill_response(response, len(batch), batch)
 
     rejected_defs = 0
@@ -406,7 +457,12 @@ def run_backfill(
 
     if workers <= 1:
         while processed < total:
-            batch = fetch_batch(conn, batch_size, include_zero=include_zero)
+            # Peek at next entries to adapt batch size
+            peek = fetch_batch(conn, batch_size, include_zero=include_zero, max_langs=max_langs)
+            if not peek:
+                break
+            eff_bs = _effective_batch_size(batch_size, peek)
+            batch = peek[:eff_bs]
             if not batch:
                 break
             try:
@@ -423,7 +479,12 @@ def run_backfill(
 
         # Fetch a working set from DB — enough to keep workers busy
         fetch_size = min(workers * batch_size * 2, total - processed)
-        working_set = fetch_batch(conn, fetch_size, include_zero=include_zero)
+        working_set = fetch_batch(conn, fetch_size, include_zero=include_zero, max_langs=max_langs)
+
+        # Adapt batch size based on how many langs are missing in this working set
+        eff_bs = _effective_batch_size(batch_size, working_set)
+        if eff_bs != batch_size:
+            print(f"    (adaptive batch size: {batch_size} → {eff_bs} due to high missing-lang count)", flush=True)
 
         executor = ThreadPoolExecutor(max_workers=workers)
         pending: dict = {}       # future -> batch
@@ -432,12 +493,12 @@ def run_backfill(
         def _submit_from_working_set():
             nonlocal ws_idx
             while len(pending) < workers * 2 and ws_idx < len(working_set):
-                batch = working_set[ws_idx:ws_idx + batch_size]
+                batch = working_set[ws_idx:ws_idx + eff_bs]
                 if not batch:
                     break
                 fut = executor.submit(_translate_one_batch, batch)
                 pending[fut] = batch
-                ws_idx += batch_size
+                ws_idx += eff_bs
 
         _submit_from_working_set()
 
@@ -456,8 +517,9 @@ def run_backfill(
                 if ws_idx >= len(working_set) and not pending and processed < total:
                     conn.commit()
                     remaining = total - processed
-                    working_set = fetch_batch(conn, min(fetch_size, remaining), include_zero=include_zero)
+                    working_set = fetch_batch(conn, min(fetch_size, remaining), include_zero=include_zero, max_langs=max_langs)
                     ws_idx = 0
+                    eff_bs = _effective_batch_size(batch_size, working_set)
 
                 _submit_from_working_set()
 
@@ -486,6 +548,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Show stats without translating")
     parser.add_argument("--include-zero", action="store_true",
                         help="Also retry headwords with zero definitions")
+    parser.add_argument("--max-langs", type=int, default=None,
+                        help="Max languages to fill per entry per pass (e.g. 9)")
     args = parser.parse_args()
 
     print("Step: Backfill missing languages")
@@ -496,6 +560,7 @@ def main():
         limit=args.limit,
         dry_run=args.dry_run,
         include_zero=args.include_zero,
+        max_langs=args.max_langs,
     )
 
 

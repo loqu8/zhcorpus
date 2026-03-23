@@ -33,7 +33,7 @@ def _load_config() -> dict:
     return {
         "base_url": env.get("ANTHROPIC_BASE_URL", "https://api.minimax.io/anthropic"),
         "api_key": env.get("ANTHROPIC_AUTH_TOKEN", ""),
-        "model": env.get("ANTHROPIC_MODEL", "MiniMax-M2.5"),
+        "model": "MiniMax-M2.7",
     }
 
 
@@ -49,19 +49,22 @@ def _get_client():
 
 
 def _chat(system: str, user: str, max_tokens: int = 1024) -> str:
-    """Send a chat request to MiniMax API and return the response text."""
+    """Send a chat request to MiniMax API and return the response text.
+
+    Uses streaming to avoid the Anthropic SDK's 10-minute timeout
+    on large max_tokens requests.
+    """
     client, model = _get_client()
-    response = client.messages.create(
+    text_parts: list[str] = []
+    with client.messages.stream(
         model=model,
         max_tokens=max_tokens,
         system=system,
         messages=[{"role": "user", "content": user}],
-    )
-    # Skip ThinkingBlock / other non-text blocks, find first TextBlock
-    for block in response.content:
-        if hasattr(block, "text"):
-            return block.text.strip()
-    return ""
+    ) as stream:
+        for text in stream.text_stream:
+            text_parts.append(text)
+    return "".join(text_parts).strip()
 
 
 def translate_entry(
