@@ -7,10 +7,26 @@ build/
 .venv/
 
 # Data (large files, not for git)
-data/raw/
-data/artifacts/
+data/
 *.db
 *.npy
+
+# Logs
+*.log
+logs/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+texput.log
+
+# Local captures (OpenReview captchas, etc.)
+captcha*.png
 
 # Native extensions (downloaded binaries)
 lib/
