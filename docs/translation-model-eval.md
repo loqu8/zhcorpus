@@ -578,3 +578,37 @@ time-sensitive runs in case of outages.
 
 329,122 headwords × 6 languages = 1,974,732 definition slots to fill.
 Running with 20 workers at ~3.6 entries/s (estimated ~25 hours).
+
+## 26-Language Expansion (2026-03-20)
+
+Added 8 new target languages: tr (Turkish), ms (Malay), pl (Polish), hu (Hungarian),
+cs (Czech), el (Greek), ro (Romanian), et (Estonian).
+
+Initial gap: ~3,322,687 definition slots across 414,590 headwords.
+
+### M2.7 vs M2.5 Observation (2026-03-21)
+
+The `settings.minimax.json` config had `ANTHROPIC_MODEL` set to `MiniMax-M2.7`, so
+the 26-lang backfill runs on 2026-03-20 were using M2.7 unintentionally. M2.7 appears
+to use extended thinking, which likely explains the higher 429 rate (more tokens/request)
+and the elevated rejection rate (~15%) seen mid-run.
+
+**Decision**: hardcoded `minimax_api.py` to `MiniMax-M2.7` (plan is M2.7-native).
+
+**M2.5 vs M2.7 speed test (2026-03-21, same prompt, same plan):**
+- M2.7: **4.0s** per call
+- M2.5: **30.9s** per call — 8× slower
+
+M2.5 was the workhorse for all previous backfill runs (18-lang expansion, original
+12-lang), running at ~3.8 entries/s with 20 workers. Something changed: the portal
+now says "Powered by MiniMax-M2.7", suggesting the plan was upgraded. On this plan,
+M2.5 appears to be routed through a slower path or emulated, making M2.7 clearly
+the better choice going forward.
+
+**Real root cause of rejections**: The `script_validator.py` was missing patterns for
+the 8 new languages — specifically reverse word-order cross-references ("埋 régi formája"),
+"lihat X" (Malay "see X"), preposition-separated "used in" ("używany w 怨埋"), and a
+`{1,4}` f-string escaping bug. After fixes: 63 fills/batch vs 0-3 before.
+
+Current run (2026-03-21): ~191K headwords remaining per new language, running at
+~1.8 entries/s with 5 workers (M2.7, rate-limited).
