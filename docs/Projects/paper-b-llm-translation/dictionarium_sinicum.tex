@@ -162,7 +162,7 @@ iTaigi             & Hokkien   &  10,572 & CC BY 4.0     & Crowdsourced Taiwanes
 
 We augmented the dictionary with Cantonese and Hokkien dialect data from 18 open sources (Table~\ref{tab:dialects}). Cantonese coverage is effectively complete: 16,564 unique single-character readings covering 99.9\% of BMP CJK characters. Hokkien coverage spans 6,850 single-character readings---lower in percentage terms (37\% BMP) but representing all characters with documented Hokkien pronunciations in open data.
 
-Hokkien romanization uses two systems: Tâi-lô (the MOE standard) and traditional POJ (Pe̍h-ōe-jī). A distinctive feature of Hokkien is its high lexical divergence from Mandarin: 68--78\% of Hokkien forms use different characters entirely (e.g., 漂亮 \textit{piàoliang} ``beautiful'' → 媠 \textit{suí}; 東西 \textit{dōngxi} ``thing'' → 物件 \textit{mi̍h-kiānn}).
+Hokkien romanization uses two systems: Tâi-lô (the MOE standard) and traditional POJ (Peh-ōe-jī). A distinctive feature of Hokkien is its high lexical divergence from Mandarin: 68--78\% of Hokkien forms use different characters entirely (e.g., 漂亮 \textit{piàoliang} ``beautiful'' → 媠 \textit{suí}; 東西 \textit{dōngxi} ``thing'' → 物件 \textit{mih-kiānn}).
 
 \subsection{Chinese Text Corpus}
 
@@ -229,19 +229,19 @@ A notable finding is that the same open-weight model can produce dramatically di
 
 The production prompt generates all 18 languages simultaneously for each batch of 20 headwords. Key design decisions:
 
-\paragraph{System prompt} (176 tokens): Establishes the lexicographer persona, output format (\texttt{xx: def1/def2}), conciseness constraints (max 5 glosses), and language-specific rules addressing three classes of script contamination:
+\paragraph{System prompt (176 tokens):} Establishes the lexicographer persona, output format (\texttt{xx: def1/def2}), conciseness constraints (max 5 glosses), and language-specific rules addressing three classes of script contamination:
 
 \begin{enumerate}
-\item \textbf{Japanese kanji echo}: Without explicit instruction, LLMs frequently ``define'' a Chinese word in Japanese by repeating the same characters (e.g., 銀行 → 銀行). The prompt requires: \textit{``Provide the MEANING in Japanese, not just kanji echo or kana reading.''}
-\item \textbf{Korean hanja mixing}: Korean definitions often include Chinese characters (hanja) unrecognizable to most modern Korean readers. The prompt specifies: \textit{``Write in Hangul only.''}
-\item \textbf{General CJK leakage}: A blanket prohibition: \textit{``Every non-Chinese definition must contain ZERO Chinese characters.''}
+\item \textbf{Japanese kanji echo:} Without explicit instruction, LLMs frequently ``define'' a Chinese word in Japanese by repeating the same characters (e.g., 銀行 → 銀行). The prompt requires: \textit{``Provide the MEANING in Japanese, not just kanji echo or kana reading.''}
+\item \textbf{Korean hanja mixing:} Korean definitions often include Chinese characters (hanja) unrecognizable to most modern Korean readers. The prompt specifies: \textit{``Write in Hangul only.''}
+\item \textbf{General CJK leakage:} A blanket prohibition: \textit{``Every non-Chinese definition must contain ZERO Chinese characters.''}
 \end{enumerate}
 
-\paragraph{User prompt} (batch of 20): Each entry includes traditional/simplified characters, pinyin, POS tag, all existing community definitions as context, and 1--2 example sentences drawn from the 113M-chunk Chinese corpus (Table~\ref{tab:corpus}). The corpus examples---sourced from Chinese Wikipedia, Baidu Baike, THUCNews, and news2016zh---provide real-world usage context that helps disambiguate polysemous headwords. Example sentences are retrieved via FTS5 lookup ({<}15ms per headword), filtered to prefer 20--100 character chunks.
+\paragraph{User prompt (batch of 20):} Each entry includes traditional/simplified characters, pinyin, POS tag, all existing community definitions as context, and 1--2 example sentences drawn from the 113M-chunk Chinese corpus (Table~\ref{tab:corpus}). The corpus examples---sourced from Chinese Wikipedia, Baidu Baike, THUCNews, and news2016zh---provide real-world usage context that helps disambiguate polysemous headwords. Example sentences are retrieved via FTS5 lookup ({<}15ms per headword), filtered to prefer 20--100 character chunks.
 
-This constitutes \textbf{pivot translation}: for the twelve languages without community dictionaries (Swedish, Korean, Russian, Vietnamese, Tagalog, Persian, Dutch, Portuguese, Arabic, Thai, Hindi, Italian), the model effectively translates from the English and other community-language glosses rather than directly from Chinese.
+This constitutes \textbf{pivot translation:} for the twelve languages without community dictionaries (Swedish, Korean, Russian, Vietnamese, Tagalog, Persian, Dutch, Portuguese, Arabic, Thai, Hindi, Italian), the model effectively translates from the English and other community-language glosses rather than directly from Chinese.
 
-\paragraph{Token economics}: {\raise.17ex\hbox{$\scriptstyle\sim$}}5,700 tokens per batch (500 system + 2,200 input including examples + 3,000 output). Full run: 21,403 batches. At MiniMax M2.5 published rates (\$0.30/M input, \$1.20/M output), the estimated cost is {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 without prompt caching or {\raise.17ex\hbox{$\scriptstyle\sim$}}\$118 with the platform's automatic caching (\$0.03/M for cached system prompts).
+\paragraph{Token economics:} Approximately 5,700 tokens per batch (500 system + 2,200 input including examples + 3,000 output). Full run: 21,403 batches. At MiniMax M2.5 published rates (\$0.30/M input, \$1.20/M output), the estimated cost is {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 without prompt caching or {\raise.17ex\hbox{$\scriptstyle\sim$}}\$118 with the platform's automatic caching (\$0.03/M for cached system prompts).
 
 \subsection{Three-Phase Execution}
 
@@ -301,7 +301,7 @@ Other 12  & {0.34--0.58\%} & CJK, Cyrillic \\
 Table~\ref{tab:contamination} breaks down contamination by language. We identified five distinct contamination modes:
 
 \begin{enumerate}
-\item \textbf{Cyrillic-in-non-Cyrillic} ({\raise.17ex\hbox{$\scriptstyle\sim$}}10K): The model falls back to Russian when translating into less-resourced scripts. Example: Arabic for 一世 → ``\textit{zhizn'} واحدة'' (Russian mixed with Arabic).
+\item \textbf{Cyrillic-in-non-Cyrillic} ({\raise.17ex\hbox{$\scriptstyle\sim$}}10K): The model falls back to Russian when translating into less-resourced scripts. Example: Arabic for 一世 → ``\textit{zhizn'} \foreignlanguage{arabic}{واحدة}'' (Russian mixed with Arabic).
 \item \textbf{Hangul-in-Japanese / Kana-in-Korean} ({\raise.17ex\hbox{$\scriptstyle\sim$}}4.4K): Systematic confusion between CJK languages.
 \item \textbf{Latin-in-Arabic/Persian} ({\raise.17ex\hbox{$\scriptstyle\sim$}}14K): English or French words injected into Arabic/Persian definitions, after exempting proper names, scientific binomials, and universal acronyms.
 \item \textbf{CJK-in-non-CJK} ({\raise.17ex\hbox{$\scriptstyle\sim$}}40K): Chinese characters in non-CJK definitions, after exempting metalinguistic cross-references (``variant of 迥'').
@@ -318,8 +318,8 @@ Table~\ref{tab:contamination} breaks down contamination by language. We identifi
 For the four languages with existing community dictionaries providing glosses (English, German, French, Indonesian), we compared LLM-generated definitions against human-curated references.\footnote{JMdict was excluded because it stores kana readings rather than Japanese-language glosses.} We sampled 200 headwords stratified by community source coverage as a frequency proxy and measured two metrics across 453 headword--language pairs:
 
 \begin{enumerate}
-\item \textbf{Sense coverage}: proportion of reference senses captured by the LLM gloss (automated lexical overlap with 50\% word-overlap threshold)
-\item \textbf{False sense rate}: proportion of LLM glosses not matched by any reference sense
+\item \textbf{Sense coverage:} proportion of reference senses captured by the LLM gloss (automated lexical overlap with 50\% word-overlap threshold)
+\item \textbf{False sense rate:} proportion of LLM glosses not matched by any reference sense
 \end{enumerate}
 
 \paragraph{Important caveat.} The translation prompt provides all existing community definitions as input context (\S\ref{sec:prompts}). For these four languages, the model \textit{sees} the reference glosses. This comparison therefore measures \textbf{context utilization}---how faithfully the model preserves reference senses---not independent translation quality. We find that 42\% of English, 40\% of German, 55\% of French, and 60\% of Indonesian LLM glosses are substring matches of the corresponding community definition.
@@ -362,7 +362,7 @@ rare (1 source)   &  23 & 93.5\% & 10.9\% \\
 
 The overall sense coverage of 87.3\% (95\% bootstrap CI: [84.7\%, 89.8\%]) with a false sense rate of 12.5\% (95\% CI: [10.1\%, 15.0\%]) shows that the model successfully preserves most reference senses while introducing few unsupported glosses (Tables~\ref{tab:comparison}--\ref{tab:bands}). Manual inspection reveals that most ``false senses'' are legitimate synonyms absent from the reference.
 
-The main failure mode is \textbf{sense compression}: the LLM produces fewer glosses than community dictionaries (median 2 vs.\ 3), preferring the most common translation equivalent and omitting specialized or archaic senses. Manual inspection of the 57 headword--language pairs with sense coverage below 50\% reveals that sense compression (38\%) and register shift (22\%) dominate, with genuine errors (wrong meaning) accounting for only 3\%.
+The main failure mode is \textbf{sense compression:} the LLM produces fewer glosses than community dictionaries (median 2 vs.\ 3), preferring the most common translation equivalent and omitting specialized or archaic senses. Manual inspection of the 57 headword--language pairs with sense coverage below 50\% reveals that sense compression (38\%) and register shift (22\%) dominate, with genuine errors (wrong meaning) accounting for only 3\%.
 
 For the twelve languages \textit{without} community dictionaries, the model relies on pivot translation. Section~\ref{sec:mt-baselines} addresses this gap.
 
