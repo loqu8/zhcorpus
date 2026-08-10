@@ -6,9 +6,49 @@
 % Anonymous review mode for ARR submission
 \usepackage[review]{acl}
 
-\usepackage{microtype}
+% microtype with modest character protrusion — reduces bad line-breaks
+% without destabilizing the layout (SamJ, ARR March 2026 feedback).
+\usepackage[activate={true,nocompatibility},final,factor=1050]{microtype}
 \usepackage{booktabs}  % Professional table rules
 \usepackage{multirow}
+
+% Require at least 3 characters on both sides of any hyphenation break.
+% Kills all 2-letter fragments ("in-", "re-", "en-", "es-", "ex-", etc.)
+% that dominated the ARR March 2026 PDF. Wrapped in \AtBeginDocument
+% because babel resets these primitives on \selectlanguage.
+% NOTE: this reflows body content to 8 pages (from 7). ACL/EMNLP long
+% papers allow 8 body pages + unlimited refs/appendix, so this is fine.
+\AtBeginDocument{%
+  \lefthyphenmin=3\relax
+  \righthyphenmin=3\relax
+}
+
+% \hyphenation directives — words WITHOUT a '-' get no break at all;
+% words WITH '-' pin the allowed break points.
+\hyphenation{%
+  % Proper nouns and headers — never break these.
+  Chinese Cantonese Spanish Portuguese Vietnamese Tibetan European
+  German French Arabic Japanese Korean Table Section Entries Creative
+  Conference Association Language Languages SambaNova BabelNet DeepSeek
+  Hispanico Community Sinicum Kirsten Ponzetto Association
+  % Common words that always broke ugly — never break.
+  published entry entries dialect dialects system context format
+  corpus primary program numbered normalizer sentences terminology
+  discarded complete compilation consolidated contamination
+  correct disabled single dictionary prevent formatting
+  lexicon lexical specialized inference specific
+  covering coverage generates generate
+  MiniMax Commercial commercial combined currently filter genuine
+  maritime backfill produces produced producing
+  % Where breaks are unavoidable, pin them at natural syllable boundaries.
+  lex-i-cog-ra-phy
+  magni-tude
+  defi-ni-tions
+  defi-ni-tion
+  compa-ra-ble
+  multi-lin-gual
+  medi-cal
+}
 
 % Font setup for LuaLaTeX — supports CJK + Arabic + Cyrillic
 \usepackage[english,bidi=default]{babel}
