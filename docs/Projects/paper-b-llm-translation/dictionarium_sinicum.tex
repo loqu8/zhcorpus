@@ -367,19 +367,19 @@ For the four languages with existing community dictionaries providing glosses (E
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{llrcc}
+\begin{tabular}{llrcccc}
 \toprule
-\textbf{Lang} & \textbf{Reference} & \textbf{n} & \textbf{Cov.} & \textbf{False} \\
+\textbf{Lang} & \textbf{Reference} & \textbf{n} & \textbf{Cov.} & \textbf{False} & \textbf{BSc.\ F1} & \textbf{COMET} \\
 \midrule
-en & CC-CEDICT  & 139 & 85.8\% & 14.1\% \\
-de & HanDeDict  & 105 & 87.9\% & 17.9\% \\
-fr & CFDICT     &  70 & 81.2\% & 18.6\% \\
-id & CC-CIDICT  & 139 & 91.3\% &  3.7\% \\
+en & CC-CEDICT  & 139 & 85.8\% & 14.1\% & 0.932 & 0.777 \\
+de & HanDeDict  & 105 & 87.9\% & 17.9\% & 0.905 & 0.712 \\
+fr & CFDICT     &  70 & 81.2\% & 18.6\% & 0.926 & 0.787 \\
+id & CC-CIDICT  & 139 & 91.3\% &  3.7\% & 0.933 & 0.820 \\
 \midrule
-\multicolumn{2}{l}{\textbf{Overall}} & \textbf{453} & \textbf{87.3\%} & \textbf{12.5\%} \\
+\multicolumn{2}{l}{\textbf{Overall}} & \textbf{453} & \textbf{87.3\%} & \textbf{12.5\%} & \textbf{0.924} & \textbf{0.774} \\
 \bottomrule
 \end{tabular}
-\caption{LLM vs.\ community dictionary comparison. Cov.\ = sense coverage; False = false sense rate.}
+\caption{LLM vs.\ community dictionary comparison. Cov.\ = sense coverage; False = false sense rate; BSc.\ F1 = BERTScore F1 (XLM-R-large); COMET = \texttt{wmt22-comet-da} \citep{rei2022comet}. Semantic-metric n=139/105/67/139 (fr slightly reduced by non-empty-reference filtering).}
 \label{tab:comparison}
 \end{table}
 
@@ -404,26 +404,7 @@ The overall sense coverage of 87.3\% (95\% bootstrap CI: [84.7\%, 89.8\%]) with 
 
 The main failure mode is \textbf{sense compression:} the LLM produces fewer glosses than community dictionaries (median 2 vs.\ 3), preferring the most common translation equivalent and omitting specialized or archaic senses. Manual inspection of the 57 headword--language pairs with sense coverage below 50\% reveals that sense compression (38\%) and register shift (22\%) dominate, with genuine errors (wrong meaning) accounting for only 3\%.
 
-\paragraph{Semantic metric agreement.} Because lexical overlap can miss legitimate synonymy, we additionally score the reference sample with two model-based MT metrics: BERTScore F1 with XLM-RoBERTa-large \citep{zhang2020bertscore} and COMET-DA (\texttt{wmt22-comet-da}, \citealp{rei2022comet}). Table~\ref{tab:semantic-ref} reports per-language values. Macro-averaged BERTScore~F1 is 0.924 and COMET-DA is 0.774; the language ordering tracks sense coverage, with Indonesian highest on all three metrics and German lowest on the two model-based scores. As with sense coverage, the LLM sees the community gloss as input context (\S\ref{sec:prompts}), so these values characterize context utilization rather than independent translation quality; independent quality is addressed for all 18 languages in \S\ref{sec:mt-baselines}.
-
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lrcc}
-\toprule
-\textbf{Lang} & \textbf{n} & \textbf{BSc.\ F1} & \textbf{COMET-DA} \\
-\midrule
-en & 139 & 0.932 & 0.777 \\
-de & 105 & 0.905 & 0.712 \\
-fr &  67 & 0.926 & 0.787 \\
-id & 139 & 0.933 & 0.820 \\
-\midrule
-\textbf{Macro} & \textbf{450} & \textbf{0.924} & \textbf{0.774} \\
-\bottomrule
-\end{tabular}
-\caption{Model-based semantic metrics on the reference sample. BSc.\ F1 = BERTScore F1 (XLM-R-large). COMET-DA = \texttt{wmt22-comet-da} \citep{rei2022comet}. French n=67 reflects filtering of pairs with empty reference text; the sense-coverage n=70 in Table~\ref{tab:comparison} is a strict superset.}
-\label{tab:semantic-ref}
-\end{table}
+\paragraph{Semantic metric agreement.} Because lexical overlap can miss legitimate synonymy, Table~\ref{tab:comparison} additionally reports two model-based MT metrics on the same reference sample: BERTScore F1 with XLM-RoBERTa-large \citep{zhang2020bertscore} and COMET-DA (\texttt{wmt22-comet-da}, \citealp{rei2022comet}). Macro-averaged BERTScore~F1 is 0.924 and COMET-DA is 0.774; the language ordering tracks sense coverage, with Indonesian highest on all three metrics and German lowest on the two model-based scores. As with sense coverage, the LLM sees the community gloss as input context (\S\ref{sec:prompts}), so these values characterize context utilization rather than independent translation quality; independent quality across all 18 languages is addressed in \S\ref{sec:mt-baselines}.
 
 For the twelve languages \textit{without} community dictionaries, the model relies on pivot translation. Section~\ref{sec:mt-baselines} addresses this gap.
 
@@ -461,9 +442,30 @@ Qwen3-235B      & 275 & 65.2 & 43.4 & 78.8 \\
 \label{sec:backtrans}
 Table~\ref{tab:mt-baseline} shows our pipeline outperforms all baselines on sense coverage (+12--22pp) and false sense rate ($-$15--37pp). The \emph{same model} (MiniMax~M2.5) with a generic prompt scores only 73.0\% coverage---14 points below our pipeline---isolating the value of dictionary-specific prompt engineering. Claude Sonnet~4, the strongest baseline at 75.4\%, still falls 12 points short. Commercial MT and frontier LLMs produce CEDICT-compatible format only 70--75\% of the time; multiple LLMs cluster in the 65--78\% range regardless of model size, suggesting pipeline design matters more than model choice.
 
+\paragraph{Model-based metrics on the MT baselines.} We additionally score the four API-accessible baselines with BERTScore F1, COMET-DA, and reference-free CometKiwi (Chinese source) on the same 275 pairs (Table~\ref{tab:mt-baseline-semantic}). The pipeline lead extends to all three metrics: +2.1~pt BSc F1, +5.8~pt COMET-DA, +1.6~pt CometKiwi over the next-best system. Claude Sonnet~4.5 is the lowest baseline on CometKiwi (0.501) despite the highest lexical sense coverage---fluent output can correlate less tightly with the Chinese source than commercial MT trained for translation fidelity.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrccc}
+\toprule
+\textbf{System} & \textbf{n} & \textbf{BSc.\ F1} & \textbf{COMET} & \textbf{CK} \\
+\midrule
+\textbf{Our pipeline} & \textbf{311} & \textbf{0.921} & \textbf{0.773} & \textbf{0.544} \\
+\addlinespace
+Google Translate  & 275 & 0.900 & 0.715 & 0.524 \\
+Claude Sonnet 4.5 & 275 & 0.900 & 0.711 & 0.501 \\
+DeepL             & 275 & 0.898 & 0.712 & 0.528 \\
+GPT-4o-mini       & 275 & 0.897 & 0.702 & 0.507 \\
+\bottomrule
+\end{tabular}
+\caption{Model-based metrics, macro-averaged over de/fr/id (same 275 pairs as Table~\ref{tab:mt-baseline}). BSc.\ F1 = BERTScore F1 (XLM-R-large); COMET = \texttt{wmt22-comet-da}; CK = reference-free \texttt{wmt22-cometkiwi-da} with the Chinese headword as source. Our-pipeline row: 3-lang macro over the same de/fr/id subset of Table~\ref{tab:comparison}. Azure and the free-LLM systems are omitted from this revision.}
+\label{tab:mt-baseline-semantic}
+\end{table}
+
 Back-translation evaluation (n=1{,}571 across 13 non-community languages) yields 68.9\% sense coverage overall, with European languages strongest (Spanish 79.0\%, Portuguese 75.2\%) and Korean weakest (60.0\%). Four LLM judges (Claude Sonnet~4, Kimi~K2, GPT-OSS-120B, DeepSeek~V3.1) rate MiniMax definitions across 100 entries: accuracy \textbf{4.34}/5, naturalness \textbf{4.31}/5, completeness \textbf{3.38}/5 (mean pairwise disagreement: 0.64 points). The lower completeness aligns with sense compression (\S\ref{sec:community}). Tagalog (3.90) and Hindi (4.04) show weakest accuracy. LLM judges may share biases with the evaluated model, but provide a quality signal where none previously existed.
 
-\paragraph{Reference-free quality across all 18 languages.} To characterise translation quality where no community dictionary exists, we score our pipeline output with CometKiwi (\texttt{wmt22-cometkiwi-da}, \citealp{rei2022cometkiwi}), a reference-free MT quality-estimation model that scores a translation given only the source. We use a 200-headword stratified sample per language (n=3{,}600 total). Macro-averaged CometKiwi across all 18 languages is 0.547; across the four community-reference languages it is 0.562, and across the twelve non-community languages 0.542---a gap of only 0.02 points (Table~\ref{tab:cometkiwi}). This near-flat profile across resource tiers is consistent with the back-translation coverage above and indicates that pipeline translation quality does not degrade materially for languages lacking a community-dictionary anchor. Tagalog (0.471) is the outlier lowest and English (0.614) the highest; the interquartile range across all 18 languages is 0.535--0.567.
+\paragraph{Reference-free quality across all 18 languages.} We score our pipeline output with CometKiwi (\texttt{wmt22-cometkiwi-da}, \citealp{rei2022cometkiwi}), a reference-free quality-estimation model, on a 200-headword stratified sample per language (n=3{,}600 total). Macro-averaged CometKiwi is 0.547 across all 18 languages; the four community-reference languages average 0.562 and the twelve non-community languages 0.542---a gap of only 0.02 (Table~\ref{tab:cometkiwi}). This near-flat profile across resource tiers indicates that pipeline translation quality does not degrade materially for languages lacking a community-dictionary anchor. Tagalog (0.471) is the lowest and English (0.614) the highest.
 
 \begin{table}[t]
 \centering
@@ -534,7 +536,7 @@ To validate the dictionary's practical utility, we built a language pack generat
 
 \textbf{Pivot bias and single-model homogeneity.} All translations are mediated through English context, inheriting English sense boundaries. All 7.7M glosses originate from MiniMax~M2.5; model-specific biases propagate uniformly, and reproducibility depends on this API remaining available.
 
-\textbf{Scope.} The 428K headwords are inherited from community dictionaries without curation. The 18 target languages cover major families but omit Malay, Bengali, and Swahili. The resource lacks compliance with TEI-Lex-0 or OntoLex-Lemon.
+\textbf{Scope.} The 428K headwords are inherited from community dictionaries without curation. The 18 target languages cover major families but omit Malay, Bengali, and Swahili.
 
 
 %% ============================================================
@@ -556,7 +558,7 @@ To validate the dictionary's practical utility, we built a language pack generat
 
 We have demonstrated that a single commercial LLM can produce a multilingual Chinese glossary of unprecedented scale---428,073 headwords in 18 languages, totaling 7.7M LLM-generated definitions---for approximately \$150 in API inference costs at published pay-as-you-go rates. The key enablers are (1)~batched prompting that generates all languages simultaneously, (2)~language-specific prompt rules that reduce script contamination, (3)~a deterministic post-translation validator that rejects the {\raise.17ex\hbox{$\scriptstyle\sim$}}0.83\% of definitions where the model mixes scripts, and (4)~a context-aware backfill pipeline that achieves 100\% multi-character coverage and 90.6\% single-character coverage. The resulting resource, combined with community dictionaries and 511K dialect forms spanning Cantonese and Hokkien, provides the first open multilingual Chinese lexical resource covering major languages of Europe, East Asia, Southeast Asia, and the Middle East.
 
-The resource is a beginning, not an endpoint. Transforming gloss lists into sense-structured, grammatically enriched, human-validated dictionary entries---and extending the approach to under-resourced languages---is a multiyear research program. The scientific questions this work opens---How do LLMs represent cross-lingual lexical semantics? Does pivot translation reproduce or restructure sense boundaries? Can computational methods trace historical loanword diffusion?---are as valuable as the artifact itself. We release the complete resource, build tools, and evaluation data under CC~BY-SA~4.0, and invite the community to build upon it.
+The resource is a beginning, not an endpoint. Transforming gloss lists into sense-structured, human-validated entries and extending the approach to under-resourced languages is a multiyear program; the scientific questions this work opens are as valuable as the artifact itself. We release everything under CC~BY-SA~4.0.
 
 
 %% ============================================================
