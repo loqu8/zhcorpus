@@ -6,9 +6,49 @@
 % Anonymous review mode for ARR submission
 \usepackage[review]{acl}
 
-\usepackage{microtype}
+% microtype with modest character protrusion — reduces bad line-breaks
+% without destabilizing the layout (SamJ, ARR March 2026 feedback).
+\usepackage[activate={true,nocompatibility},final,factor=1050]{microtype}
 \usepackage{booktabs}  % Professional table rules
 \usepackage{multirow}
+
+% Require at least 3 characters on both sides of any hyphenation break.
+% Kills all 2-letter fragments ("in-", "re-", "en-", "es-", "ex-", etc.)
+% that dominated the ARR March 2026 PDF. Wrapped in \AtBeginDocument
+% because babel resets these primitives on \selectlanguage.
+% NOTE: this reflows body content to 8 pages (from 7). ACL/EMNLP long
+% papers allow 8 body pages + unlimited refs/appendix, so this is fine.
+\AtBeginDocument{%
+  \lefthyphenmin=3\relax
+  \righthyphenmin=3\relax
+}
+
+% \hyphenation directives — words WITHOUT a '-' get no break at all;
+% words WITH '-' pin the allowed break points.
+\hyphenation{%
+  % Proper nouns and headers — never break these.
+  Chinese Cantonese Spanish Portuguese Vietnamese Tibetan European
+  German French Arabic Japanese Korean Table Section Entries Creative
+  Conference Association Language Languages SambaNova BabelNet DeepSeek
+  Hispanico Community Sinicum Kirsten Ponzetto Association
+  % Common words that always broke ugly — never break.
+  published entry entries dialect dialects system context format
+  corpus primary program numbered normalizer sentences terminology
+  discarded complete compilation consolidated contamination
+  correct disabled single dictionary prevent formatting
+  lexicon lexical specialized inference specific
+  covering coverage generates generate
+  MiniMax Commercial commercial combined currently filter genuine
+  maritime backfill produces produced producing
+  % Where breaks are unavoidable, pin them at natural syllable boundaries.
+  lex-i-cog-ra-phy
+  magni-tude
+  defi-ni-tions
+  defi-ni-tion
+  compa-ra-ble
+  multi-lin-gual
+  medi-cal
+}
 
 % Font setup for LuaLaTeX — supports CJK + Arabic + Cyrillic
 \usepackage[english,bidi=default]{babel}
@@ -162,7 +202,7 @@ iTaigi             & Hokkien   &  10,572 & CC BY 4.0     & Crowdsourced Taiwanes
 
 We augmented the dictionary with Cantonese and Hokkien dialect data from 18 open sources (Table~\ref{tab:dialects}). Cantonese coverage is effectively complete: 16,564 unique single-character readings covering 99.9\% of BMP CJK characters. Hokkien coverage spans 6,850 single-character readings---lower in percentage terms (37\% BMP) but representing all characters with documented Hokkien pronunciations in open data.
 
-Hokkien romanization uses two systems: Tâi-lô (the MOE standard) and traditional POJ (Pe̍h-ōe-jī). A distinctive feature of Hokkien is its high lexical divergence from Mandarin: 68--78\% of Hokkien forms use different characters entirely (e.g., 漂亮 \textit{piàoliang} ``beautiful'' → 媠 \textit{suí}; 東西 \textit{dōngxi} ``thing'' → 物件 \textit{mi̍h-kiānn}).
+Hokkien romanization uses two systems: Tâi-lô (the MOE standard) and traditional POJ (Peh-ōe-jī). A distinctive feature of Hokkien is its high lexical divergence from Mandarin: 68--78\% of Hokkien forms use different characters entirely (e.g., 漂亮 \textit{piàoliang} ``beautiful'' → 媠 \textit{suí}; 東西 \textit{dōngxi} ``thing'' → 物件 \textit{mih-kiānn}).
 
 \subsection{Chinese Text Corpus}
 
@@ -229,19 +269,19 @@ A notable finding is that the same open-weight model can produce dramatically di
 
 The production prompt generates all 18 languages simultaneously for each batch of 20 headwords. Key design decisions:
 
-\paragraph{System prompt} (176 tokens): Establishes the lexicographer persona, output format (\texttt{xx: def1/def2}), conciseness constraints (max 5 glosses), and language-specific rules addressing three classes of script contamination:
+\paragraph{System prompt (176 tokens):} Establishes the lexicographer persona, output format (\texttt{xx: def1/def2}), conciseness constraints (max 5 glosses), and language-specific rules addressing three classes of script contamination:
 
 \begin{enumerate}
-\item \textbf{Japanese kanji echo}: Without explicit instruction, LLMs frequently ``define'' a Chinese word in Japanese by repeating the same characters (e.g., 銀行 → 銀行). The prompt requires: \textit{``Provide the MEANING in Japanese, not just kanji echo or kana reading.''}
-\item \textbf{Korean hanja mixing}: Korean definitions often include Chinese characters (hanja) unrecognizable to most modern Korean readers. The prompt specifies: \textit{``Write in Hangul only.''}
-\item \textbf{General CJK leakage}: A blanket prohibition: \textit{``Every non-Chinese definition must contain ZERO Chinese characters.''}
+\item \textbf{Japanese kanji echo:} Without explicit instruction, LLMs frequently ``define'' a Chinese word in Japanese by repeating the same characters (e.g., 銀行 → 銀行). The prompt requires: \textit{``Provide the MEANING in Japanese, not just kanji echo or kana reading.''}
+\item \textbf{Korean hanja mixing:} Korean definitions often include Chinese characters (hanja) unrecognizable to most modern Korean readers. The prompt specifies: \textit{``Write in Hangul only.''}
+\item \textbf{General CJK leakage:} A blanket prohibition: \textit{``Every non-Chinese definition must contain ZERO Chinese characters.''}
 \end{enumerate}
 
-\paragraph{User prompt} (batch of 20): Each entry includes traditional/simplified characters, pinyin, POS tag, all existing community definitions as context, and 1--2 example sentences drawn from the 113M-chunk Chinese corpus (Table~\ref{tab:corpus}). The corpus examples---sourced from Chinese Wikipedia, Baidu Baike, THUCNews, and news2016zh---provide real-world usage context that helps disambiguate polysemous headwords. Example sentences are retrieved via FTS5 lookup ({<}15ms per headword), filtered to prefer 20--100 character chunks.
+\paragraph{User prompt (batch of 20):} Each entry includes traditional/simplified characters, pinyin, POS tag, all existing community definitions as context, and 1--2 example sentences drawn from the 113M-chunk Chinese corpus (Table~\ref{tab:corpus}). The corpus examples---sourced from Chinese Wikipedia, Baidu Baike, THUCNews, and news2016zh---provide real-world usage context that helps disambiguate polysemous headwords. Example sentences are retrieved via FTS5 lookup ({<}15ms per headword), filtered to prefer 20--100 character chunks.
 
-This constitutes \textbf{pivot translation}: for the twelve languages without community dictionaries (Swedish, Korean, Russian, Vietnamese, Tagalog, Persian, Dutch, Portuguese, Arabic, Thai, Hindi, Italian), the model effectively translates from the English and other community-language glosses rather than directly from Chinese.
+This constitutes \textbf{pivot translation:} for the twelve languages without community dictionaries (Swedish, Korean, Russian, Vietnamese, Tagalog, Persian, Dutch, Portuguese, Arabic, Thai, Hindi, Italian), the model effectively translates from the English and other community-language glosses rather than directly from Chinese.
 
-\paragraph{Token economics}: {\raise.17ex\hbox{$\scriptstyle\sim$}}5,700 tokens per batch (500 system + 2,200 input including examples + 3,000 output). Full run: 21,403 batches. At MiniMax M2.5 published rates (\$0.30/M input, \$1.20/M output), the estimated cost is {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 without prompt caching or {\raise.17ex\hbox{$\scriptstyle\sim$}}\$118 with the platform's automatic caching (\$0.03/M for cached system prompts).
+\paragraph{Token economics:} Approximately 5,700 tokens per batch (500 system + 2,200 input including examples + 3,000 output). Full run: 21,403 batches. At MiniMax M2.5 published rates (\$0.30/M input, \$1.20/M output), the estimated cost is {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 without prompt caching or {\raise.17ex\hbox{$\scriptstyle\sim$}}\$118 with the platform's automatic caching (\$0.03/M for cached system prompts).
 
 \subsection{Three-Phase Execution}
 
@@ -301,7 +341,7 @@ Other 12  & {0.34--0.58\%} & CJK, Cyrillic \\
 Table~\ref{tab:contamination} breaks down contamination by language. We identified five distinct contamination modes:
 
 \begin{enumerate}
-\item \textbf{Cyrillic-in-non-Cyrillic} ({\raise.17ex\hbox{$\scriptstyle\sim$}}10K): The model falls back to Russian when translating into less-resourced scripts. Example: Arabic for 一世 → ``\textit{zhizn'} واحدة'' (Russian mixed with Arabic).
+\item \textbf{Cyrillic-in-non-Cyrillic} ({\raise.17ex\hbox{$\scriptstyle\sim$}}10K): The model falls back to Russian when translating into less-resourced scripts. Example: Arabic for 一世 → ``\textit{zhizn'} \foreignlanguage{arabic}{واحدة}'' (Russian mixed with Arabic).
 \item \textbf{Hangul-in-Japanese / Kana-in-Korean} ({\raise.17ex\hbox{$\scriptstyle\sim$}}4.4K): Systematic confusion between CJK languages.
 \item \textbf{Latin-in-Arabic/Persian} ({\raise.17ex\hbox{$\scriptstyle\sim$}}14K): English or French words injected into Arabic/Persian definitions, after exempting proper names, scientific binomials, and universal acronyms.
 \item \textbf{CJK-in-non-CJK} ({\raise.17ex\hbox{$\scriptstyle\sim$}}40K): Chinese characters in non-CJK definitions, after exempting metalinguistic cross-references (``variant of 迥'').
@@ -318,8 +358,8 @@ Table~\ref{tab:contamination} breaks down contamination by language. We identifi
 For the four languages with existing community dictionaries providing glosses (English, German, French, Indonesian), we compared LLM-generated definitions against human-curated references.\footnote{JMdict was excluded because it stores kana readings rather than Japanese-language glosses.} We sampled 200 headwords stratified by community source coverage as a frequency proxy and measured two metrics across 453 headword--language pairs:
 
 \begin{enumerate}
-\item \textbf{Sense coverage}: proportion of reference senses captured by the LLM gloss (automated lexical overlap with 50\% word-overlap threshold)
-\item \textbf{False sense rate}: proportion of LLM glosses not matched by any reference sense
+\item \textbf{Sense coverage:} proportion of reference senses captured by the LLM gloss (automated lexical overlap with 50\% word-overlap threshold)
+\item \textbf{False sense rate:} proportion of LLM glosses not matched by any reference sense
 \end{enumerate}
 
 \paragraph{Important caveat.} The translation prompt provides all existing community definitions as input context (\S\ref{sec:prompts}). For these four languages, the model \textit{sees} the reference glosses. This comparison therefore measures \textbf{context utilization}---how faithfully the model preserves reference senses---not independent translation quality. We find that 42\% of English, 40\% of German, 55\% of French, and 60\% of Indonesian LLM glosses are substring matches of the corresponding community definition.
@@ -327,19 +367,19 @@ For the four languages with existing community dictionaries providing glosses (E
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{llrcc}
+\begin{tabular}{llrcccc}
 \toprule
-\textbf{Lang} & \textbf{Reference} & \textbf{n} & \textbf{Cov.} & \textbf{False} \\
+\textbf{Lang} & \textbf{Reference} & \textbf{n} & \textbf{Cov.} & \textbf{False} & \textbf{BSc.\ F1} & \textbf{COMET} \\
 \midrule
-en & CC-CEDICT  & 139 & 85.8\% & 14.1\% \\
-de & HanDeDict  & 105 & 87.9\% & 17.9\% \\
-fr & CFDICT     &  70 & 81.2\% & 18.6\% \\
-id & CC-CIDICT  & 139 & 91.3\% &  3.7\% \\
+en & CC-CEDICT  & 139 & 85.8\% & 14.1\% & 0.932 & 0.777 \\
+de & HanDeDict  & 105 & 87.9\% & 17.9\% & 0.905 & 0.712 \\
+fr & CFDICT     &  70 & 81.2\% & 18.6\% & 0.926 & 0.787 \\
+id & CC-CIDICT  & 139 & 91.3\% &  3.7\% & 0.933 & 0.820 \\
 \midrule
-\multicolumn{2}{l}{\textbf{Overall}} & \textbf{453} & \textbf{87.3\%} & \textbf{12.5\%} \\
+\multicolumn{2}{l}{\textbf{Overall}} & \textbf{453} & \textbf{87.3\%} & \textbf{12.5\%} & \textbf{0.924} & \textbf{0.774} \\
 \bottomrule
 \end{tabular}
-\caption{LLM vs.\ community dictionary comparison. Cov.\ = sense coverage; False = false sense rate.}
+\caption{LLM vs.\ community dictionary comparison. Cov.\ = sense coverage; False = false sense rate; BSc.\ F1 = BERTScore F1 (XLM-R-large); COMET = \texttt{wmt22-comet-da} \citep{rei2022comet}. Semantic-metric n=139/105/67/139 (fr slightly reduced by non-empty-reference filtering).}
 \label{tab:comparison}
 \end{table}
 
@@ -362,7 +402,9 @@ rare (1 source)   &  23 & 93.5\% & 10.9\% \\
 
 The overall sense coverage of 87.3\% (95\% bootstrap CI: [84.7\%, 89.8\%]) with a false sense rate of 12.5\% (95\% CI: [10.1\%, 15.0\%]) shows that the model successfully preserves most reference senses while introducing few unsupported glosses (Tables~\ref{tab:comparison}--\ref{tab:bands}). Manual inspection reveals that most ``false senses'' are legitimate synonyms absent from the reference.
 
-The main failure mode is \textbf{sense compression}: the LLM produces fewer glosses than community dictionaries (median 2 vs.\ 3), preferring the most common translation equivalent and omitting specialized or archaic senses. Manual inspection of the 57 headword--language pairs with sense coverage below 50\% reveals that sense compression (38\%) and register shift (22\%) dominate, with genuine errors (wrong meaning) accounting for only 3\%.
+The main failure mode is \textbf{sense compression:} the LLM produces fewer glosses than community dictionaries (median 2 vs.\ 3), preferring the most common translation equivalent and omitting specialized or archaic senses. Manual inspection of the 57 headword--language pairs with sense coverage below 50\% reveals that sense compression (38\%) and register shift (22\%) dominate, with genuine errors (wrong meaning) accounting for only 3\%.
+
+\paragraph{Semantic metric agreement.} Because lexical overlap can miss legitimate synonymy, Table~\ref{tab:comparison} additionally reports two model-based MT metrics on the same reference sample: BERTScore F1 with XLM-RoBERTa-large \citep{zhang2020bertscore} and COMET-DA (\texttt{wmt22-comet-da}, \citealp{rei2022comet}). Macro-averaged BERTScore~F1 is 0.924 and COMET-DA is 0.774; the language ordering tracks sense coverage, with Indonesian highest on all three metrics and German lowest on the two model-based scores. As with sense coverage, the LLM sees the community gloss as input context (\S\ref{sec:prompts}), so these values characterize context utilization rather than independent translation quality; independent quality across all 18 languages is addressed in \S\ref{sec:mt-baselines}.
 
 For the twelve languages \textit{without} community dictionaries, the model relies on pivot translation. Section~\ref{sec:mt-baselines} addresses this gap.
 
@@ -400,7 +442,55 @@ Qwen3-235B      & 275 & 65.2 & 43.4 & 78.8 \\
 \label{sec:backtrans}
 Table~\ref{tab:mt-baseline} shows our pipeline outperforms all baselines on sense coverage (+12--22pp) and false sense rate ($-$15--37pp). The \emph{same model} (MiniMax~M2.5) with a generic prompt scores only 73.0\% coverage---14 points below our pipeline---isolating the value of dictionary-specific prompt engineering. Claude Sonnet~4, the strongest baseline at 75.4\%, still falls 12 points short. Commercial MT and frontier LLMs produce CEDICT-compatible format only 70--75\% of the time; multiple LLMs cluster in the 65--78\% range regardless of model size, suggesting pipeline design matters more than model choice.
 
+\paragraph{Model-based metrics on the MT baselines.} We additionally score the four API-accessible baselines with BERTScore F1, COMET-DA, and reference-free CometKiwi (Chinese source) on the same 275 pairs (Table~\ref{tab:mt-baseline-semantic}). The pipeline lead extends to all three metrics: +2.1~pt BSc F1, +5.8~pt COMET-DA, +1.6~pt CometKiwi over the next-best system. Claude Sonnet~4.5 is the lowest baseline on CometKiwi (0.501) despite the highest lexical sense coverage---fluent output can correlate less tightly with the Chinese source than commercial MT trained for translation fidelity.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrccc}
+\toprule
+\textbf{System} & \textbf{n} & \textbf{BSc.\ F1} & \textbf{COMET} & \textbf{CK} \\
+\midrule
+\textbf{Our pipeline} & \textbf{311} & \textbf{0.921} & \textbf{0.773} & \textbf{0.544} \\
+\addlinespace
+Google Translate  & 275 & 0.900 & 0.715 & 0.524 \\
+Claude Sonnet 4.5 & 275 & 0.900 & 0.711 & 0.501 \\
+DeepL             & 275 & 0.898 & 0.712 & 0.528 \\
+GPT-4o-mini       & 275 & 0.897 & 0.702 & 0.507 \\
+\bottomrule
+\end{tabular}
+\caption{Model-based metrics, macro-averaged over de/fr/id (same 275 pairs as Table~\ref{tab:mt-baseline}). BSc.\ F1 = BERTScore F1 (XLM-R-large); COMET = \texttt{wmt22-comet-da}; CK = reference-free \texttt{wmt22-cometkiwi-da} with the Chinese headword as source. Our-pipeline row: 3-lang macro over the same de/fr/id subset of Table~\ref{tab:comparison}. Azure and the free-LLM systems are omitted from this revision.}
+\label{tab:mt-baseline-semantic}
+\end{table}
+
 Back-translation evaluation (n=1{,}571 across 13 non-community languages) yields 68.9\% sense coverage overall, with European languages strongest (Spanish 79.0\%, Portuguese 75.2\%) and Korean weakest (60.0\%). Four LLM judges (Claude Sonnet~4, Kimi~K2, GPT-OSS-120B, DeepSeek~V3.1) rate MiniMax definitions across 100 entries: accuracy \textbf{4.34}/5, naturalness \textbf{4.31}/5, completeness \textbf{3.38}/5 (mean pairwise disagreement: 0.64 points). The lower completeness aligns with sense compression (\S\ref{sec:community}). Tagalog (3.90) and Hindi (4.04) show weakest accuracy. LLM judges may share biases with the evaluated model, but provide a quality signal where none previously existed.
+
+\paragraph{Reference-free quality across all 18 languages.} We score our pipeline output with CometKiwi (\texttt{wmt22-cometkiwi-da}, \citealp{rei2022cometkiwi}), a reference-free quality-estimation model, on a 200-headword stratified sample per language (n=3{,}600 total). Macro-averaged CometKiwi is 0.547 across all 18 languages; the four community-reference languages average 0.562 and the twelve non-community languages 0.542---a gap of only 0.02 (Table~\ref{tab:cometkiwi}). This near-flat profile across resource tiers indicates that pipeline translation quality does not degrade materially for languages lacking a community-dictionary anchor. Tagalog (0.471) is the lowest and English (0.614) the highest.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lc|lc}
+\toprule
+\textbf{Lang} & \textbf{CK} & \textbf{Lang} & \textbf{CK} \\
+\midrule
+en$^{\dagger}$ & 0.614 & id$^{\dagger}$ & 0.543 \\
+de$^{\dagger}$ & 0.534 & ja & 0.546 \\
+fr$^{\dagger}$ & 0.555 & ko & 0.557 \\
+es & 0.558 & ru & 0.568 \\
+it & 0.570 & vi & 0.554 \\
+pt & 0.554 & tl & 0.471 \\
+nl & 0.540 & fa & 0.535 \\
+sv & 0.540 & th & 0.521 \\
+      &       & ar & 0.503 \\
+      &       & hi & 0.589 \\
+\midrule
+\multicolumn{4}{c}{\textbf{Macro: 0.547} (ref 0.562 / non-community 0.542)} \\
+\bottomrule
+\end{tabular}
+\caption{Reference-free CometKiwi scores (higher is better) on 200 stratified headwords per language (n=3{,}600 total). $\dagger$ = language with a community reference dictionary. Left column groups European targets; right column groups East Asian, Southeast Asian, and Middle Eastern targets.}
+\label{tab:cometkiwi}
+\end{table}
 
 \subsection{Source Priority and Coverage}
 
@@ -442,11 +532,11 @@ To validate the dictionary's practical utility, we built a language pack generat
 
 \textbf{Glosses, not definitions.} The resource produces translation equivalents, not full lexicographic definitions with usage notes or grammatical patterns. Entries lack sense discrimination: polysemous words produce flat gloss lists. Inflecting languages lack grammatical metadata (German noun gender, Russian aspect pairs).
 
-\textbf{Evaluation limitations.} Sense coverage is an automated lexical overlap proxy, not a human judgment, and partially circular (\S\ref{sec:quality}). MT baselines (\S\ref{sec:mt-baselines}) use the same metrics; LLM-as-judge scores (\S\ref{sec:backtrans}) may share biases with the evaluated model. Human evaluation across all 18 languages remains future work.
+\textbf{Evaluation limitations.} Sense coverage is an automated lexical overlap proxy, not a human judgment, and partially circular for languages where the community gloss appears in the prompt context (\S\ref{sec:community}). The model-based metrics we report---BERTScore \citep{zhang2020bertscore}, COMET-DA \citep{rei2022comet}, and reference-free CometKiwi \citep{rei2022cometkiwi}---mitigate the surface-form limitation of lexical overlap but inherit the biases of their underlying multilingual encoders, and CometKiwi scores are less well-calibrated for low-resource target languages. LLM-as-judge scores (\S\ref{sec:backtrans}) may share biases with the evaluated model. Human evaluation across all 18 languages remains future work.
 
 \textbf{Pivot bias and single-model homogeneity.} All translations are mediated through English context, inheriting English sense boundaries. All 7.7M glosses originate from MiniMax~M2.5; model-specific biases propagate uniformly, and reproducibility depends on this API remaining available.
 
-\textbf{Scope.} The 428K headwords are inherited from community dictionaries without curation. The 18 target languages cover major families but omit Malay, Bengali, and Swahili. The resource lacks compliance with TEI-Lex-0 or OntoLex-Lemon.
+\textbf{Scope.} The 428K headwords are inherited from community dictionaries without curation. The 18 target languages cover major families but omit Malay, Bengali, and Swahili.
 
 
 %% ============================================================
@@ -468,7 +558,7 @@ To validate the dictionary's practical utility, we built a language pack generat
 
 We have demonstrated that a single commercial LLM can produce a multilingual Chinese glossary of unprecedented scale---428,073 headwords in 18 languages, totaling 7.7M LLM-generated definitions---for approximately \$150 in API inference costs at published pay-as-you-go rates. The key enablers are (1)~batched prompting that generates all languages simultaneously, (2)~language-specific prompt rules that reduce script contamination, (3)~a deterministic post-translation validator that rejects the {\raise.17ex\hbox{$\scriptstyle\sim$}}0.83\% of definitions where the model mixes scripts, and (4)~a context-aware backfill pipeline that achieves 100\% multi-character coverage and 90.6\% single-character coverage. The resulting resource, combined with community dictionaries and 511K dialect forms spanning Cantonese and Hokkien, provides the first open multilingual Chinese lexical resource covering major languages of Europe, East Asia, Southeast Asia, and the Middle East.
 
-The resource is a beginning, not an endpoint. Transforming gloss lists into sense-structured, grammatically enriched, human-validated dictionary entries---and extending the approach to under-resourced languages---is a multiyear research program. The scientific questions this work opens---How do LLMs represent cross-lingual lexical semantics? Does pivot translation reproduce or restructure sense boundaries? Can computational methods trace historical loanword diffusion?---are as valuable as the artifact itself. We release the complete resource, build tools, and evaluation data under CC~BY-SA~4.0, and invite the community to build upon it.
+The resource is a beginning, not an endpoint. Transforming gloss lists into sense-structured, human-validated entries and extending the approach to under-resourced languages is a multiyear program; the scientific questions this work opens are as valuable as the artifact itself. We release everything under CC~BY-SA~4.0.
 
 
 %% ============================================================

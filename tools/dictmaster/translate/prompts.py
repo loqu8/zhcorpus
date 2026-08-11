@@ -67,6 +67,14 @@ LANG_NAMES = {
     "th": "Thai",
     "hi": "Hindi",
     "it": "Italian",
+    "tr": "Turkish",
+    "ms": "Malay",
+    "pl": "Polish",
+    "hu": "Hungarian",
+    "cs": "Czech",
+    "el": "Greek",
+    "ro": "Romanian",
+    "et": "Estonian",
 }
 
 
@@ -150,11 +158,11 @@ def build_batch_prompt(
 # Universal (all-languages-at-once) prompts
 # ---------------------------------------------------------------------------
 
-ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa", "nl", "pt", "ar", "th", "hi", "it"]
+ALL_TARGET_LANGS = ["en", "de", "fr", "es", "sv", "ja", "ko", "ru", "id", "vi", "tl", "fa", "nl", "pt", "ar", "th", "hi", "it", "tr", "ms", "pl", "hu", "cs", "el", "ro", "et"]
 
 UNIVERSAL_SYSTEM_PROMPT = """\
 You are a professional multilingual Chinese lexicographer producing \
-dictionary-style definitions in 18 languages.
+dictionary-style definitions in 26 languages.
 
 Rules:
 - Output EXACTLY one line per language in format "xx: def1/def2"
@@ -190,7 +198,16 @@ Do NOT mix in Latin script or other languages.
 - hi (Hindi): Write in Devanagari script. Use native Hindi vocabulary, not English transliterations.
 - nl (Dutch): Write in standard Dutch. Use natural Dutch compounds and phrasing.
 - pt (Portuguese): Write in Brazilian Portuguese. Use proper diacritics.
-- it (Italian): Write in standard Italian."""
+- it (Italian): Write in standard Italian.
+- tr (Turkish): Use proper Turkish characters (ğ, ş, ç, ı, ö, ü). Do NOT substitute ASCII equivalents.
+- ms (Malay): Write in standard Malay (Bahasa Melayu). This is NOT Indonesian — use Malaysian \
+vocabulary and conventions (e.g. "kereta" not "mobil" for car).
+- pl (Polish): Use proper Polish diacritics (ą, ć, ę, ł, ń, ó, ś, ź, ż).
+- hu (Hungarian): Use proper Hungarian accents (á, é, í, ó, ö, ő, ú, ü, ű).
+- cs (Czech): Use proper Czech diacritics (á, č, ď, é, ě, í, ň, ó, ř, š, ť, ú, ů, ý, ž).
+- el (Greek): Write in Greek script with proper diacritics (tonos). Do NOT transliterate from English.
+- ro (Romanian): Use proper Romanian diacritics with comma-below (ș, ț), NOT cedilla (ş, ţ).
+- et (Estonian): Write in standard Estonian. Use proper characters (ä, ö, ü, õ, š, ž)."""
 
 UNIVERSAL_TRANSLATE_TEMPLATE = """\
 Chinese: {traditional} / {simplified}

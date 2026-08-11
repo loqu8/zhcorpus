@@ -107,25 +107,44 @@ sudo apt install texlive-full fonts-noto-cjk
 
 - Use `~` for non-breaking spaces: `CC~BY-SA~4.0`
 - Use `--` for en-dash, `---` for em-dash
-- Approximate sign: `{\raise.17ex\hbox{$\scriptstyle\sim$}}` or just `$\sim$`
+- Approximate sign: `{\raise.17ex\hbox{$\scriptstyle\sim$}}` or just `$\sim$` — but NOT immediately after `\paragraph{}` (use a word instead)
 - Chinese in running text: just type it (LuaLaTeX handles it)
 - Use `\textit{pinyin}` for romanization
 - Use `\textbf{term}` sparingly — ACL style prefers italics for emphasis
 - `\S\ref{sec:name}` for section cross-references
 - `\citet{key}` for "Author (year)", `\citep{key}` for "(Author, year)"
+- **Colons in labels**: Always `\textbf{Label:}` not `\textbf{Label}:` — prevents justification gaps
+- **Non-Latin scripts**: Wrap in language commands for correct font selection:
+  - Arabic/Persian: `\foreignlanguage{arabic}{واحدة}`
+  - Thai: `\foreignlanguage{thai}{เต้าหู้}`
+  - Hindi: `\foreignlanguage{hindi}{नमस्ते}`
+  - Korean: handled by `luatexja` + `\babelfont[*hangul]`
+  - Cyrillic: `{\cyrfont привет}` (if using a custom `\cyrfont` command)
 
 ## BibTeX Patterns
 
+**CRITICAL: Always list ALL authors.** Never use `and others` to abbreviate — the ACL natbib BST renders it as "and 1 others" (grammatically wrong, looks broken in the PDF). List every author for papers with ≤10 authors. For papers with 10+ authors (like NLLB with 39), list the first 5 and use `and others` — but verify the `.bbl` output renders "et al." not "and N others". If the BST is buggy, patch line ~597 of `acl_natbib.bst` to use `bbl.etal` instead of the computed string.
+
+**CRITICAL: Verify author names.** Do NOT trust AI-generated BibTeX entries — they frequently hallucinate first names. Always cross-check against ACL Anthology, Semantic Scholar, or the paper's own PDF header.
+
 ```bibtex
-% Conference paper
+% Conference paper — ALL authors listed
 @inproceedings{lu2024chainofdict,
-    title = {Chain-of-Dictionary Prompting...},
-    author = {Lu, Yikun and others},
+    title = {Chain-of-Dictionary Prompting Elicits Translation in Large Language Models},
+    author = {Lu, Hongyuan and Yang, Haoran and Huang, Haoyang and Zhang, Dongdong and Lam, Wai and Wei, Furu},
     booktitle = {Proceedings of {EMNLP} 2024},
     pages = {958--976},
     year = {2024},
     publisher = {Association for Computational Linguistics},
-    url = {https://aclanthology.org/2024.emnlp-main.58/}
+    url = {https://aclanthology.org/2024.emnlp-main.55/}
+}
+
+% Large author list (39 authors) — first 5 + "and others"
+@article{costajussa2022nllb,
+    title = {No Language Left Behind: Scaling Human-Centered Machine Translation},
+    author = {Costa-juss{\`a}, Marta R. and Cross, James and {\c{C}}elebi, Onur and Elbayad, Maha and Heafield, Kenneth and others},
+    journal = {arXiv preprint arXiv:2207.04672},
+    year = {2022}
 }
 
 % Journal article
@@ -139,9 +158,10 @@ sudo apt install texlive-full fonts-noto-cjk
     doi = {10.1016/j.artint.2012.04.001}
 }
 
-% Online resource
+% Online resource (no author — use key for sorting)
 @misc{cedict,
     title = {{CC-CEDICT}: Community-Maintained Dictionary},
+    key = {CC-CEDICT},
     howpublished = {\url{https://cc-cedict.org/}},
     note = {CC BY-SA 4.0},
     year = {2024}
@@ -234,6 +254,37 @@ All accounts are required or strongly recommended before ARR submission. Set the
 - Since May 2025, all ARR authors must also register as reviewers
 - Do this once OpenReview account is active, before paper submission
 
+## Pre-Submission Checklist
+
+Run this checklist BEFORE every submission. These are real bugs from Paper B (ARR March 2026).
+
+### References
+- [ ] **Compile and check `.bbl`**: Search for "others" — if you see "and N others" instead of "et al.", the BST is buggy or you have incomplete author lists
+- [ ] **Verify every author name**: Cross-check first names against ACL Anthology or the paper PDF. AI tools frequently hallucinate first names (e.g., generated "Jana Kirsten" when the real author is "Elisabeth Kirsten")
+- [ ] **No `and others` for ≤10 authors**: List them all. Only use `and others` for genuinely large author lists (10+)
+- [ ] **`key` field for keyless entries**: `@misc` entries without `author` need a `key` field for proper sorting
+
+### Typography
+- [ ] **Colons after bold/headings**: ALWAYS put the colon INSIDE the command: `\textbf{Label:}` not `\textbf{Label}:`. LaTeX justification stretches the space before a colon that sits outside a command, creating ugly gaps
+- [ ] **Colons after `\paragraph`**: Same rule: `\paragraph{Heading:}` not `\paragraph{Heading}:`. Also, `\paragraph{}` consumes the next `{...}` group as an argument, so `\paragraph{X:} {\raise...}` will break — use a word or `$\sim$` instead of `{\raise...}` immediately after
+- [ ] **No `{\raise...}` after `\paragraph{}`**: The `\raise` command gets consumed by `\paragraph`'s argument parsing. Use `$\sim$`, `Approximately`, or restructure
+
+### Fonts & Scripts
+- [ ] **Compile with zero "Missing character" warnings**: Run `lualatex ... 2>&1 | grep "Missing character"` — must be empty
+- [ ] **Wrap non-Latin scripts in language commands**: Arabic text needs `\foreignlanguage{arabic}{...}`, Thai needs `\foreignlanguage{thai}{...}`, etc. Without the wrapper, text renders in TeXGyreTermesX which lacks these glyphs — characters silently disappear
+- [ ] **POJ diacritics**: The combining vertical line above (U+030D, used in Pe̍h-ōe-jī) is not in TeXGyreTermesX. Use plain ASCII `Peh-oe-ji` in running text, or find a font that supports it
+- [ ] **Unicode superscripts**: `ⁿ` (U+207F) is not in Noto Serif CJK. Use `\textsuperscript{n}` instead
+- [ ] **Hindi font selector**: In babel, `\babelfont[*devanagari]{rm}{...}` works for the supplementary but the main paper uses `\babelfont[*hindi]{rm}{...}` — test both and use whichever compiles clean
+
+### Supplementary Materials
+- [ ] **Rebuild the zip**: If you update the supplementary PDF, you must rebuild the zip archive and re-upload to OpenReview (Software or Data field)
+- [ ] **Check supplementary independently**: Compile `supplementary.tex` and check for missing characters separately from the main paper
+
+### OpenReview / ARR
+- [ ] **Submission deadline**: Check exact date on [aclrollingreview.org/dates](https://aclrollingreview.org/dates) — it's often the 15th or 16th, not the date you think
+- [ ] **Editing window**: You can edit all fields (including PDF) up until the deadline. After deadline, only metadata fields remain editable for ~48h
+- [ ] **Author registration**: ALL authors must register as reviewers within 48h of the deadline or face desk rejection
+
 ## Common Pitfalls
 
 1. **Over-revision bloat**: After 3+ reviewer passes, Limitations grows longer than Results. Fix with a final buddy pass that cuts ruthlessly.
@@ -243,6 +294,9 @@ All accounts are required or strongly recommended before ARR submission. Set the
 5. **pdfLaTeX with CJK**: Won't work. Must use LuaLaTeX or XeLaTeX.
 6. **Anonymity violations**: No GitHub URLs, no "our previous work (Author, 2024)", no company names in review version.
 7. **Table numbering**: Tables must be numbered sequentially as they appear. Re-check after every structural edit.
+8. **`and others` in BibTeX**: The ACL `acl_natbib.bst` renders this as "and 1 others" instead of "et al." — a known bug. List all authors or patch the BST (line ~597: replace computed string with `bbl.etal`).
+9. **Colons outside formatting commands**: `\textbf{X}:` allows LaTeX to insert stretchable space before the colon. Always `\textbf{X:}`.
+10. **Non-Latin text without font wrapper**: Arabic, Thai, Devanagari, etc. will silently disappear if rendered in TeXGyreTermesX. Always use `\foreignlanguage{lang}{text}`.
 
 ## Git Flow for Papers
 
