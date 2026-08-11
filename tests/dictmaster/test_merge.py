@@ -4,6 +4,7 @@ import pytest
 
 from tools.dictmaster.schema import get_connection, init_db, upsert_definition, upsert_headword
 from tools.dictmaster.merge import (
+    _pinyin_merge_key,
     fill_pos_from_definitions,
     get_coverage_report,
     infer_pos_from_definition,
@@ -46,6 +47,37 @@ class TestNormalizePinyin:
 
     def test_passthrough(self):
         assert normalize_pinyin("ni3 hao3") == "ni3 hao3"
+
+
+class TestPinyinMergeKey:
+    """Test pinyin merge key generation for duplicate detection."""
+
+    def test_spacing_stripped(self):
+        assert _pinyin_merge_key("dong4 tai4 zhu4 ci2") == _pinyin_merge_key("dongtai4 zhuci2")
+
+    def test_u_colon_normalized(self):
+        assert _pinyin_merge_key("lu:4") == _pinyin_merge_key("lv4")
+
+    def test_umlaut_normalized(self):
+        assert _pinyin_merge_key("nü3") == _pinyin_merge_key("nv3")
+
+    def test_hyphens_stripped(self):
+        assert _pinyin_merge_key("yibai-mi3") == _pinyin_merge_key("yibaimi3")
+
+    def test_case_preserved(self):
+        assert _pinyin_merge_key("He2") != _pinyin_merge_key("he2")
+
+    def test_different_syllables_differ(self):
+        # le vs liao — different syllables, must not merge
+        assert _pinyin_merge_key("le5") != _pinyin_merge_key("liao3")
+
+    def test_same_syllable_different_tones_merge(self):
+        # de5 (particle) and de2 (obtain) — same base, merged under one headword
+        assert _pinyin_merge_key("de5") == _pinyin_merge_key("de2")
+
+    def test_parenthesized_annotations_stripped(self):
+        # Wiktextract-style annotations like (ei¹)5
+        assert _pinyin_merge_key("ei1 (ei¹)5") == _pinyin_merge_key("ei1")
 
 
 class TestInferPos:
@@ -135,6 +167,63 @@ class TestReconcileHeadwords:
         # Both headwords must survive
         hw_count = db.execute("SELECT COUNT(*) FROM headwords").fetchone()[0]
         assert hw_count == 2
+
+    def test_merge_spacing_variants(self, db):
+        """char-level 'dong4 tai4 zhu4 ci2' merges with word-level 'dongtai4 zhuci2'."""
+        id1 = upsert_headword(db, "動態助詞", "动态助词", "dong4 tai4 zhu4 ci2")
+        id2 = upsert_headword(db, "動態助詞", "动态助词", "dongtai4 zhuci2")
+        upsert_definition(db, id1, "en", "aspect particle", "cedict")
+        upsert_definition(db, id2, "en", "aspect particle (Wiktextract)", "wiktextract")
+        db.commit()
+
+        merged = reconcile_headwords(db)
+        assert merged == 1
+
+        hw_count = db.execute("SELECT COUNT(*) FROM headwords").fetchone()[0]
+        assert hw_count == 1
+
+        # Both definitions should be on the surviving headword
+        defs = db.execute(
+            "SELECT * FROM definitions WHERE headword_id = ?", (id1,)
+        ).fetchall()
+        assert len(defs) == 2
+
+    def test_merge_hyphenated_pinyin(self, db):
+        """Hyphens in Wiktextract pinyin should not prevent merging."""
+        id1 = upsert_headword(db, "一百米", "一百米", "yi1 bai3 mi3")
+        id2 = upsert_headword(db, "一百米", "一百米", "yibai-mi3")
+        upsert_definition(db, id1, "en", "100 meters", "cedict")
+        upsert_definition(db, id2, "en", "one hundred meters", "wiktextract")
+        db.commit()
+
+        merged = reconcile_headwords(db)
+        assert merged == 1
+
+    def test_no_merge_different_syllables(self, db):
+        """Different syllable bases (le vs liao) must not be merged."""
+        id1 = upsert_headword(db, "了", "了", "le5")
+        id2 = upsert_headword(db, "了", "了", "liao3")
+        upsert_definition(db, id1, "en", "(particle)", "cedict")
+        upsert_definition(db, id2, "en", "to finish", "cedict")
+        db.commit()
+
+        merged = reconcile_headwords(db)
+        assert merged == 0
+        assert db.execute("SELECT COUNT(*) FROM headwords").fetchone()[0] == 2
+
+    def test_merge_same_syllable_different_tones(self, db):
+        """Same base syllable with different tones → merge (e.g. 得 de2/de5)."""
+        id1 = upsert_headword(db, "得", "得", "de2")
+        id2 = upsert_headword(db, "得", "得", "de5")
+        upsert_definition(db, id1, "en", "to obtain", "cedict")
+        upsert_definition(db, id2, "en", "structural particle", "wiktextract")
+        db.commit()
+
+        merged = reconcile_headwords(db)
+        assert merged == 1
+        # Both definitions survive (different sources bypass UNIQUE constraint)
+        defs = db.execute("SELECT * FROM definitions WHERE headword_id = ?", (id1,)).fetchall()
+        assert len(defs) == 2
 
 
 class TestFillPos:
