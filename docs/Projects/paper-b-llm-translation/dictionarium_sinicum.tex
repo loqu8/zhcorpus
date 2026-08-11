@@ -565,6 +565,10 @@ To validate the dictionary's practical utility, we built a language pack generat
 
 A single open-weight LLM (MiniMax M2.5) can produce a multilingual Chinese glossary of 428,073 headwords $\times$ 18 languages for approximately \$150. Enablers: batched cross-language prompting, language-specific rules that reduce script contamination to $\sim$0.83\%, a deterministic script-validator gate, and context-aware backfill (100\% multi-char, 90.6\% single-char). Combined with 511K Cantonese/Hokkien dialect forms, this is the first open multilingual Chinese lexical resource covering the major languages of Europe, East Asia, Southeast Asia, and the Middle East.
 
+%% ============================================================
+\section*{Data and Code Availability}
+\label{sec:availability}
+The full \textit{Dictionarium Sinicum} SQLite database (2\,GB, 428{,}073 headwords $\times$ 18 languages, SHA-256 \texttt{e647e163\ldots8ea512}) is archived at Zenodo: \url{[ZENODO_DOI]}. All pipeline code, evaluation scripts, and reproducibility artifacts (Apache-2.0) are mirrored anonymously at \url{[ANON_MIRROR_URL]} for the review period; the production repository URL will be provided in the camera-ready.
 
 
 %% ============================================================
