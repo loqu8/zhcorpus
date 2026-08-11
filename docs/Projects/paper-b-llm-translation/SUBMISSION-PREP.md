@@ -55,7 +55,10 @@ the full dictionary artifact.
    generic like `dictionarium-sinicum-arr2026-XXXX` where XXXX is a random
    suffix the service adds — or accept the default.
 7. Under **"terms to replace"** (all case-insensitive), paste this list
-   verbatim, one per line:
+   verbatim, one per line. The list is intentionally defensive: strings
+   not found in the repo are silent no-ops, but a missed identifier is
+   a desk-reject risk. False positives cost nothing; false negatives
+   are catastrophic.
 
    ```
    Loqu8, Inc.
@@ -66,18 +69,25 @@ the full dictionary artifact.
    E. Timothy
    Timothy Uy
    Timothy
-   tofutim
    Tim Uy
+   Tim
    Uy
+   tofutim
    tim@gig8.com
    tim@loqu8.com
    torque@gmail.com
+   torque
    loqu8.com
    gig8.com
    Bellingham
    /home/tim/
    0009-0008-8717-2249
    ```
+
+   Note: bare `Tim` will also match variable names or "TODO Tim" style
+   comments in code. Reviewers correctly interpret `XXXX` as an
+   anonymization mark, so this is fine — better a cluttered mirror
+   than a name leak.
 
 8. Under **"paths to exclude"** (comma or newline-separated):
 
