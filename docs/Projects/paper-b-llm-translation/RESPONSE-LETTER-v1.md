@@ -139,14 +139,20 @@ a real prompt-engineering effect.
 
 ### Q2: The pivot ablation uses only ~33 pairs per language after CC-CEDICT filtering. Isn't that statistically underpowered?
 
-The original submission was n=33 per language. In direct response to
-this concern we re-ran with n=300 per language (450 sampled,
-$\sim$300 usable after filtering), added percentile-bootstrap 95%
-confidence intervals on the per-pair CometKiwi delta, and confirmed
-the qualitative finding: the Vietnamese pivot advantage is
-statistically distinguishable from zero; the Thai neutrality is not
-distinguishable from zero. Numbers are in §5.3 "English-pivot
-ablation" paragraph; per-pair CIs are in the release.
+**We agree, and rerunning changes the finding.** The original n=33
+suggested pivot helped Vietnamese by +0.067 CometKiwi and was neutral
+for Thai. Rerun at n=324 (vi) and n=181 (th) with percentile-bootstrap
+95% CIs shows the delta shrinks by an order of magnitude AND both CIs
+straddle zero: Vietnamese direct-minus-pivot Δ = $-0.006$
+(CI $[-0.020, +0.009]$), Thai Δ = $-0.020$ (CI $[-0.040, +0.001]$).
+The earlier "pivot helps Vietnamese" finding was noise, not signal.
+The revised §5.3 paragraph reports the honest finding: at properly
+powered sample sizes, English pivot has no statistically detectable
+effect on translation quality for either language. Notably, the
+gloss agreement is only 61% (vi) / 44% (th), meaning pivot and direct
+produce lexically different translations of equivalent reference-free
+quality — the model uses the pivot context but the target-language
+sense boundaries land in similar semantic space either way.
 
 ### Q3: What is the sense-coverage performance on a held-out set of headwords whose community glosses were NEVER supplied in the prompt?
 
