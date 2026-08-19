@@ -60,7 +60,7 @@ New `SINGLE_CHAR_SYSTEM_PROMPT` extends `UNIVERSAL_SYSTEM_PROMPT` with:
 ```bash
 # In tmux
 tmux new -s retranslate
-cd ~/Projects/loqu8/zhcorpus
+cd ~/repos/loqu8/zhcorpus
 .venv/bin/python tools/dictmaster/retranslate_single_chars.py
 ```
 

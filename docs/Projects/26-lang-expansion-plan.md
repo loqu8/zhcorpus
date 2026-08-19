@@ -130,7 +130,7 @@ This translates all 428K headwords but only fills the 8 new language slots
 ### Phase 3: Backfill remaining gaps
 ```bash
 # In tmux (ALWAYS — this takes ~24-48h)
-cd /home/tim/Projects/loqu8/zhcorpus
+cd /home/tim/repos/loqu8/zhcorpus
 tmux new-session -d -s backfill \
   "PYTHONPATH=. .venv/bin/python -u tools/dictmaster/backfill_langs.py \
    --workers 20 --batch-size 20 2>&1 | tee logs/backfill-26lang-$(date +%Y%m%d).log"

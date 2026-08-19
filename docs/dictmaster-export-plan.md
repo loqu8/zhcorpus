@@ -333,13 +333,13 @@ across repos without needing to hold context from earlier phases.
 ### Step 1: zhcorpus — build_langpack.py (self-contained)
 
 ```bash
-cd ~/Projects/loqu8/zhcorpus
+cd ~/repos/loqu8/zhcorpus
 # Create tools/dictmaster/build_langpack.py
 # Copy build_searchix() + extract_def_terms() from nomad-builder/tools/dictgen/build_dict_db.py
 # (just those two functions, ~80 lines — or import them)
 #
 # Inputs:
-#   --template  ~/Projects/loqu8/nomad-builder/ext/data/out/CE/core.sqlite  (136 MB)
+#   --template  ~/repos/loqu8/nomad-builder/ext/data/out/CE/core.sqlite  (136 MB)
 #   --dictmaster data/artifacts/dictmaster.db  (752 MB)
 #   --lang es
 #   --output data/artifacts/langpacks/core-es.sqlite
@@ -347,7 +347,7 @@ cd ~/Projects/loqu8/zhcorpus
 #
 # Test:
 .venv/bin/python tools/dictmaster/build_langpack.py \
-  --template ~/Projects/loqu8/nomad-builder/ext/data/out/CE/core.sqlite \
+  --template ~/repos/loqu8/nomad-builder/ext/data/out/CE/core.sqlite \
   --dictmaster data/artifacts/dictmaster.db \
   --lang es --chars-only \
   --output /tmp/core-es.sqlite
@@ -365,7 +365,7 @@ sqlite3 /tmp/core-es.sqlite "SELECT traditional, simplified, definition FROM Ent
 ### Step 2: copyworks — smoke test (depends on step 1 output)
 
 ```bash
-cd ~/Projects/loqu8/copyworks
+cd ~/repos/loqu8/copyworks
 NOMAD_DATA=/tmp flutter run -d linux
 # core-es.sqlite is at /tmp/core-es.sqlite
 # Verify: Spanish definitions appear in worksheet generation
@@ -374,7 +374,7 @@ NOMAD_DATA=/tmp flutter run -d linux
 ### Step 3: nomad-builder — build matrix (depends on step 1 script)
 
 ```bash
-cd ~/Projects/loqu8/nomad-builder
+cd ~/repos/loqu8/nomad-builder
 # Update release-copyworks-data.sh to call build_langpack.py in a loop
 # for all 12 languages, using the existing core.sqlite as template
 # CEROD encrypt each one, upload to GH releases
@@ -383,7 +383,7 @@ cd ~/Projects/loqu8/nomad-builder
 ### Step 4: loqu8-dart — language pack support (independent of steps 1-3)
 
 ```bash
-cd ~/Projects/loqu8/loqu8-dart
+cd ~/repos/loqu8/loqu8-dart
 # Extend DataService:
 #   - downloadLanguagePack(lang) — download core-{lang}.xdb from GH releases
 #   - setLanguage(lang) — switch active DB path
@@ -395,7 +395,7 @@ cd ~/Projects/loqu8/loqu8-dart
 ### Step 5: copyworks — language picker UI (depends on step 4)
 
 ```bash
-cd ~/Projects/loqu8/copyworks
+cd ~/repos/loqu8/copyworks
 # Add language picker to settings
 # Add first-run language selection
 # Add download progress UI

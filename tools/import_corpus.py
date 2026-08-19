@@ -29,7 +29,7 @@ from zhcorpus.ingest.cedict_parser import load_cedict
 from zhcorpus.ingest.corpus_extract import import_source, SOURCE_MAP
 
 
-BACKFILL_DB = Path("/home/tim/Projects/loqu8/cedict-backfill/data/artifacts/jieba_candidates.db")
+BACKFILL_DB = Path("/home/tim/repos/loqu8/cedict-backfill/data/artifacts/jieba_candidates.db")
 CEDICT_FILE = Path(__file__).parent.parent / "data" / "raw" / "cedict_1_0_ts_utf-8_mdbg.txt"
 DEFAULT_DB = Path(__file__).parent.parent / "data" / "artifacts" / "zhcorpus.db"
 

@@ -33,8 +33,8 @@ the full dictionary artifact.
 
 | Path | Content | Size |
 |------|---------|------|
-| `~/Projects/loqu8/dictionarium-sinicum/` | Working checkout at v0.3.1 | ~2 MB (no data) |
-| `~/Projects/loqu8/zhcorpus/data/artifacts/dictmaster.db` | Full 428K-headword × 18-lang DB | 2,058,850,304 B (1.92 GiB) |
+| `~/repos/loqu8/dictionarium-sinicum/` | Working checkout at v0.3.1 | ~2 MB (no data) |
+| `~/repos/loqu8/zhcorpus/data/artifacts/dictmaster.db` | Full 428K-headword × 18-lang DB | 2,058,850,304 B (1.92 GiB) |
 | SHA-256 of DB | `e647e1638a53d033be9ff2f58103cbb5876393f7741f1ab93535bec40c8ea512` | — |
 
 ---
@@ -126,7 +126,7 @@ After the mirror is live, open it and verify:
       "Copyright 2026 XXXX".
 - [ ] Open `NOTICE` — same.
 - [ ] Open `src/dictmaster/build_master.py` line 574 — the hardcoded
-      `/home/tim/Projects/loqu8/...` path should be redacted.
+      `/home/tim/repos/loqu8/...` path should be redacted.
 - [ ] Open `pyproject.toml` — 4 URL fields + author name should be redacted.
 - [ ] Commit-history tab (if present) — anon-github strips author info
       automatically.
@@ -430,7 +430,7 @@ Fallback: build an anonymized zip locally and attach as ACL
 supplementary material:
 
 ```bash
-cd ~/Projects/loqu8/dictionarium-sinicum
+cd ~/repos/loqu8/dictionarium-sinicum
 git archive --format=zip HEAD -o /tmp/dictionarium-sinicum-anon.zip
 # then manually redact identifying strings in the zip:
 zip -d /tmp/dictionarium-sinicum-anon.zip 'CITATION.cff' 'NOTICE'

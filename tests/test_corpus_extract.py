@@ -188,7 +188,7 @@ class TestImportFromRealDb:
 
     @pytest.fixture
     def backfill_db_path(self):
-        path = Path("/home/tim/Projects/loqu8/cedict-backfill/data/artifacts/jieba_candidates.db")
+        path = Path("/home/tim/repos/loqu8/cedict-backfill/data/artifacts/jieba_candidates.db")
         if not path.exists():
             pytest.skip("cedict-backfill database not available")
         return path
