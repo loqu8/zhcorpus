@@ -115,3 +115,29 @@ definitions") and the meta-review.
    Limitations ("in progress; full set in the LREV version"). Partial human eval with IAA still
    converts every "no human eval" objection into a scoping quibble.
 5. LREV parallel (~2 weeks after the ARR push) gets the completed full set either way.
+
+---
+
+## DECISION (Tim, 2026-08-31): Tier 7 human evaluation is CUT — no paid annotation
+
+Ruled out on budget ($500–$1,500 not happening). The recommendation above is superseded.
+Zero-cost mitigation plan instead:
+
+1. **LLM-jury with agreement stats (~$0, 2–3 days).** Replace the single LLM judge with a
+   3–5 model panel on the SAME 100-entry sets (free/subscription models via model-radar —
+   e.g., one Qwen, one Llama, one Gemini/Claude leg), report inter-judge agreement the way
+   human IAA would be reported, plus disagreement analysis. Directly blunts gKVr's
+   "LLM-judge bias/reliability" — bias is the objection, and a jury with measured agreement
+   is the standard no-human answer to it.
+2. **Tier 8 second-model backfill verification (~$0, ~3 days)** — SamJ's own suggested
+   alternative; run the 12 no-reference-language backfill through a second model, report
+   divergence. Do it; it was optional only because Tier 7 existed.
+3. **Volunteer micro-eval IF free (0 days our effort):** if any native speakers in the
+   Loqu8/community orbit will score 25–50 entries in 1–2 languages unpaid, include it as a
+   "small-scale human spot-check" (SamJ asked for exactly "small-scale... at least one
+   language"). If nobody volunteers, skip — do not pay.
+4. **Own the gap in writing:** Limitations states plainly that evaluation is automatic +
+   LLM-jury, scoped by resource constraints; the response letter answers the human-eval asks
+   with items 1–2 above rather than silence. Reviewers punish evasion more than honest scope.
+5. Venue posture unchanged: Findings-track + LREV are resource-paper-friendly; a
+   dictionary resource with airtight automatic eval + jury agreement is committable there.
