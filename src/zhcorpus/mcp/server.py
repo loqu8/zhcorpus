@@ -14,6 +14,14 @@ from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
+# Shared estate policy, vendored as a single generated file (mcpkit). Refuses unknown tool
+# arguments instead of silently discarding them, and advertises additionalProperties:false so
+# the catalog matches the runtime. Regenerate with:
+#   python -m mcpkit.vendor --out src/zhcorpus/mcp/_mcpkit.py
+# Verify it has not been hand-edited with:
+#   python -m mcpkit.vendor --check src/zhcorpus/mcp/_mcpkit.py
+from ._mcpkit import StrictArgsMCP
+
 # ---------------------------------------------------------------------------
 # Lazy imports — these touch zhcorpus internals only when actually called
 # ---------------------------------------------------------------------------
@@ -67,7 +75,7 @@ Wiktextract (multi), JMdict (ja), MiniMax translations (ar, es, fa, hi, ko, pt, 
 - All data stays local. The server binds to localhost only.
 """
 
-mcp = FastMCP("zhcorpus", instructions=_INSTRUCTIONS)
+mcp = StrictArgsMCP("zhcorpus", instructions=_INSTRUCTIONS)
 
 # ---------------------------------------------------------------------------
 # Global state — configured lazily

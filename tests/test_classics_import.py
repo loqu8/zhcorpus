@@ -247,14 +247,14 @@ class TestImportRealClassics:
 
     @pytest.fixture
     def niutrans_path(self):
-        path = Path("/home/tim/Projects/loqu8/zhcorpus/data/raw/Classical-Modern")
+        path = Path("/home/tim/repos/loqu8/zhcorpus/data/raw/Classical-Modern")
         if not path.exists():
             pytest.skip("NiuTrans/Classical-Modern not cloned")
         return path
 
     @pytest.fixture
     def poetry_path(self):
-        path = Path("/home/tim/Projects/loqu8/zhcorpus/data/raw/chinese-poetry")
+        path = Path("/home/tim/repos/loqu8/zhcorpus/data/raw/chinese-poetry")
         if not path.exists():
             pytest.skip("chinese-poetry not cloned")
         return path

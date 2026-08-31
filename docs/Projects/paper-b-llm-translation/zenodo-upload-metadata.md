@@ -5,7 +5,7 @@
 
 ## Upload location
 
-- File: `/home/tim/Projects/loqu8/zhcorpus/data/artifacts/dictmaster.db`
+- File: `/home/tim/repos/loqu8/zhcorpus/data/artifacts/dictmaster.db`
 - Size: 2,058,850,304 bytes (~2.0 GB)
 - SHA256: `e647e1638a53d033be9ff2f58103cbb5876393f7741f1ab93535bec40c8ea512`
 
@@ -99,10 +99,10 @@ computational linguistics
 Paste the DOI back to Claude in the format: `10.5281/zenodo.XXXXXXX`
 
 Claude will then backfill:
-1. `/home/tim/Projects/loqu8/dictionarium-sinicum/CITATION.cff` — replace "DOI pending" with the real DOI
-2. `/home/tim/Projects/loqu8/dictionarium-sinicum/README.md` — replace "(DOI pending)" with the real DOI + link
-3. `/home/tim/Projects/loqu8/zhcorpus/docs/Projects/paper-b-llm-translation/dictionarium_sinicum.tex` — add DOI citation in the "Data and Code Availability" section (may need to add this section if it doesn't exist yet)
-4. `/home/tim/Projects/loqu8/zhcorpus/docs/Projects/paper-b-llm-translation/references.bib` — add a bib entry for the Zenodo dataset
+1. `/home/tim/repos/loqu8/dictionarium-sinicum/CITATION.cff` — replace "DOI pending" with the real DOI
+2. `/home/tim/repos/loqu8/dictionarium-sinicum/README.md` — replace "(DOI pending)" with the real DOI + link
+3. `/home/tim/repos/loqu8/zhcorpus/docs/Projects/paper-b-llm-translation/dictionarium_sinicum.tex` — add DOI citation in the "Data and Code Availability" section (may need to add this section if it doesn't exist yet)
+4. `/home/tim/repos/loqu8/zhcorpus/docs/Projects/paper-b-llm-translation/references.bib` — add a bib entry for the Zenodo dataset
 
 ## Notes
 

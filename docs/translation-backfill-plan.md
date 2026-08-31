@@ -205,7 +205,7 @@ process (Claude Code, terminal) closes.
 
 ```bash
 # Launch in tmux (the canonical command — copy-paste this)
-cd /home/tim/Projects/loqu8/zhcorpus
+cd /home/tim/repos/loqu8/zhcorpus
 tmux new-session -d -s backfill \
   "PYTHONPATH=. .venv/bin/python -u tools/dictmaster/backfill_langs.py \
    --workers 20 --batch-size 20 2>&1 | tee logs/backfill-\$(date +%Y%m%d).log"

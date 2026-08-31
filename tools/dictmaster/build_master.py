@@ -571,7 +571,7 @@ def step_dialect(db_path: Path, limit: int | None = None) -> None:
         print(f"  SKIP rime-cantonese: {rime_path} not found")
 
     # Unihan kCantonese: Unicode Consortium readings
-    unihan_path = Path("/home/tim/Projects/loqu8/nomad-builder/tools/chardata/raw/Unihan.zip")
+    unihan_path = Path("/home/tim/repos/loqu8/nomad-builder/tools/chardata/raw/Unihan.zip")
     if unihan_path.exists():
         print(f"  Importing Unihan kCantonese (yue) from {unihan_path.name}...")
         t0 = time.time()
