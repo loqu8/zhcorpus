@@ -52,8 +52,6 @@ def serve(transport: str, port: int, web: bool, corpus_db: Path, dict_db: Path) 
     server = create_server()
 
     if transport == "sse":
-        server.settings.host = "127.0.0.1"
-        server.settings.port = port
 
         if web:
             from .web import add_web_routes
@@ -64,12 +62,12 @@ def serve(transport: str, port: int, web: bool, corpus_db: Path, dict_db: Path) 
         import anyio
         import uvicorn
 
-        app = make_sse_and_streamable_http_app(mount_path="/")
+        app = make_sse_and_streamable_http_app()
         config = uvicorn.Config(
             app,
-            host=server.settings.host,
-            port=server.settings.port,
-            log_level=server.settings.log_level.lower(),
+            host="127.0.0.1",
+            port=port,
+            log_level=str(server.settings.log_level).lower(),
         )
 
         async def _run():

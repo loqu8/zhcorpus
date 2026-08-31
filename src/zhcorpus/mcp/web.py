@@ -3,7 +3,7 @@
 Follows the model-radar/srclight pattern:
 - _dashboard_html() returns single-page HTML+CSS+JS
 - REST endpoints at /api/* wrap MCP tool functions
-- add_web_routes(mcp) registers routes on the FastMCP instance
+- add_web_routes(mcp) registers routes on the MCPServer instance
 """
 
 import json
@@ -668,7 +668,7 @@ async def _dashboard(request: Request) -> Response:
 # ---------------------------------------------------------------------------
 
 def add_web_routes(mcp_instance) -> None:
-    """Register dashboard and REST API routes on the FastMCP instance.
+    """Register dashboard and REST API routes on the MCPServer instance.
 
     Call before run(transport='sse').
     """
