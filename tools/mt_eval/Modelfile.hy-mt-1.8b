@@ -1,0 +1,17 @@
+# Fixed Ollama Modelfile for HY-MT1.5-1.8B-GGUF.
+#
+# The auto-generated template from `ollama pull hf.co/tencent/HY-MT1.5-1.8B-GGUF`
+# is corrupted: it loses {{ .Prompt }} and emits "onse }}" literally.
+# This rebuilds with the working chat template inferred from raw-mode probing:
+#   prompt followed by <｜hy_place▁holder▁no▁2｜> elicits the translation,
+#   model stops on <｜hy_place▁holder▁no▁8｜>.
+#
+# Build: ollama create hy-mt-1.8b -f tools/mt_eval/Modelfile.hy-mt-1.8b
+FROM hf.co/tencent/HY-MT1.5-1.8B-GGUF:latest
+
+TEMPLATE """{{ if .System }}<｜hy_begin▁of▁sentence｜>{{ .System }}<｜hy_place▁holder▁no▁3｜>{{ end }}{{ .Prompt }}<｜hy_place▁holder▁no▁2｜>{{ .Response }}"""
+
+PARAMETER stop "<｜hy_place▁holder▁no▁8｜>"
+PARAMETER stop "<｜hy_place▁holder▁no▁2｜>"
+PARAMETER temperature 0.0
+PARAMETER num_predict 256

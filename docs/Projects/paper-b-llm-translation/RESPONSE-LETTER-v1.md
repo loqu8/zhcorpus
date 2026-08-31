@@ -186,8 +186,8 @@ tab in the released code. The paper's earlier claim of "90.6%
 single-character coverage" was a snapshot from an intermediate run;
 subsequent backfill iterations with alternative prompting for
 metalinguistic definitions closed those gaps. The current DB
-(released at Zenodo DOI \[XXX\]) shows 100.0% coverage across all
-7{,}709{,}256 slots.
+(released at Harvard Dataverse, doi:10.7910/DVN/HJWMKI) shows 100.0% coverage
+across all 7{,}709{,}256 slots.
 
 ### Q6: Missing prior art?
 
@@ -214,8 +214,8 @@ grammatical enrichment (multi-year research program).
 
 - Anonymized code mirror at anonymous.4open.science (link in
   §Data and Code Availability).
-- Full 2 GB SQLite database archived at Zenodo (DOI in
-  §Data and Code Availability).
+- Full 2 GB SQLite database archived at Harvard Dataverse under CC BY-SA 4.0
+  (doi:10.7910/DVN/HJWMKI; see §Data and Code Availability).
 - 189/189 unit tests pass on the released repository.
 - All eval scripts accept `--seed` for reproducible sampling; every
   reported metric can be re-derived by running the corresponding
