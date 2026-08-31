@@ -1,4 +1,6 @@
-% Dictionarium Sinicum — EMNLP 2026 submission via ARR May cycle
+% Dictionarium Sinicum — NAACL/COLING 2027 Findings via ARR October 2026 cycle
+% Previous round: ARR March 2026 (OpenReview sVPHR4PSzR, avg 3.33 Borderline).
+% This revision addresses reviewer objections; response inlined as Appendix D.
 % Compile with LuaLaTeX (required for CJK characters)
 % lualatex dictionarium_sinicum && bibtex dictionarium_sinicum && lualatex dictionarium_sinicum && lualatex dictionarium_sinicum
 \documentclass[11pt]{article}
@@ -466,34 +468,9 @@ GPT-4o-mini       & 275 & 0.897 & 0.702 & 0.507 \\
 
 Back-translation evaluation (n=1{,}571 across 13 non-community languages) yields 68.9\% sense coverage overall, with European languages strongest (Spanish 79.0\%, Portuguese 75.2\%) and Korean weakest (60.0\%). Four LLM judges (Claude Sonnet~4, Kimi~K2, GPT-OSS-120B, DeepSeek~V3.1) rate MiniMax definitions across 100 entries: accuracy \textbf{4.34}/5, naturalness \textbf{4.31}/5, completeness \textbf{3.38}/5 (mean pairwise disagreement: 0.64 points). The lower completeness aligns with sense compression (\S\ref{sec:community}). Tagalog (3.90) and Hindi (4.04) show weakest accuracy. LLM judges may share biases with the evaluated model, but provide a quality signal where none previously existed.
 
-\paragraph{Reference-free quality across all 18 languages.} We score our pipeline output with CometKiwi (\texttt{wmt22-cometkiwi-da}, \citealp{rei2022cometkiwi}), a reference-free quality-estimation model, on a 200-headword stratified sample per language (n=3{,}600 total). Macro-averaged CometKiwi is 0.547 across all 18 languages; the four community-reference languages average 0.562 and the twelve non-community languages 0.542---a gap of only 0.02 (Table~\ref{tab:cometkiwi}). This near-flat profile across resource tiers indicates that pipeline translation quality does not degrade materially for languages lacking a community-dictionary anchor. Tagalog (0.471) is the lowest and English (0.614) the highest.
+\paragraph{Reference-free quality across all 18 languages.} We score our pipeline output with CometKiwi (\texttt{wmt22-cometkiwi-da}, \citealp{rei2022cometkiwi}) on a 200-headword stratified sample per language (n=3{,}600). Macro-averaged CometKiwi is 0.547; the four community-reference languages average 0.562 vs.\ 0.542 for the twelve non-community languages---a 0.02 gap indicating pipeline quality does not degrade materially for non-community-anchor languages (Tagalog lowest 0.471, English highest 0.614; per-language values in Appendix~\ref{sec:appendix-cometkiwi}).
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lc|lc}
-\toprule
-\textbf{Lang} & \textbf{CK} & \textbf{Lang} & \textbf{CK} \\
-\midrule
-en$^{\dagger}$ & 0.614 & id$^{\dagger}$ & 0.543 \\
-de$^{\dagger}$ & 0.534 & ja & 0.546 \\
-fr$^{\dagger}$ & 0.555 & ko & 0.557 \\
-es & 0.558 & ru & 0.568 \\
-it & 0.570 & vi & 0.554 \\
-pt & 0.554 & tl & 0.471 \\
-nl & 0.540 & fa & 0.535 \\
-sv & 0.540 & th & 0.521 \\
-      &       & ar & 0.503 \\
-      &       & hi & 0.589 \\
-\midrule
-\multicolumn{4}{c}{\textbf{Macro: 0.547} (ref 0.562 / non-community 0.542)} \\
-\bottomrule
-\end{tabular}
-\caption{Reference-free CometKiwi scores (higher is better) on 200 stratified headwords per language (n=3{,}600 total). $\dagger$ = language with a community reference dictionary. Left column groups European targets; right column groups East Asian, Southeast Asian, and Middle Eastern targets.}
-\label{tab:cometkiwi}
-\end{table}
-
-\paragraph{English-gloss-context ablation.} We compare two prompts to the same model (Llama-3.3-70B, open-weight, via Groq): \textit{direct}, a Chinese-only prompt; and \textit{pivot-context}, a prompt that adds the CC-CEDICT English gloss alongside the Chinese source. On a symmetric Vietnamese (n=324) + Thai (n=324) sample drawn from headwords with CC-CEDICT English glosses (324 of $\sim$448 stratified samples per language), the reference-free CometKiwi delta (direct minus pivot-context; higher CometKiwi = better) is $-0.006$ for Vietnamese (95\% paired-bootstrap CI $[-0.020, +0.009]$, B=2000) and $-0.024$ for Thai (95\% CI $[-0.039, -0.010]$). The Vietnamese interval straddles zero, so no effect is statistically detectable at this sample size; the Thai interval is entirely negative, indicating that for Thai, adding the CC-CEDICT English gloss as prompt context alongside the Chinese source produces measurably higher-quality Thai output than a Chinese-only prompt ($\sim$0.024 CometKiwi points, roughly 5\% of the direct score). Symmetric gloss agreement (mean of forward and backward sense coverage between the two conditions) is 61.3\% (vi, CI $[56.5\%, 66.1\%]$) and 40.8\% (th, CI $[36.4\%, 45.3\%]$); the lower Thai agreement rules out the delta being noise between near-identical outputs, though the quality preference itself rests on CometKiwi. Two caveats bound the finding: (i)~CometKiwi's training distribution is English-heavy, so absolute scores on Thai and Vietnamese carry more uncertainty than on high-resource pairs, though the within-language contrast should largely cancel this bias; and (ii)~the ``pivot'' condition here is pivot-as-context (Chinese source retained, English gloss added), not the classical A$\to$MT(en)$\to$MT(B) cascade to which prior negative pivot-MT results apply.
+\paragraph{English-gloss-context ablation.} We compare two prompts to Llama-3.3-70B (open-weight, via Groq): \textit{direct} (Chinese-only) and \textit{pivot-context} (adds the CC-CEDICT English gloss alongside the Chinese source). On symmetric Vietnamese (n=324) and Thai (n=324) samples of headwords with CC-CEDICT glosses, the direct-minus-pivot CometKiwi delta is $-0.006$ for Vietnamese (95\% paired-bootstrap CI $[-0.020, +0.009]$, B=2000) and $-0.024$ for Thai (CI $[-0.039, -0.010]$). Vietnamese straddles zero (no detectable effect); Thai is entirely negative, indicating pivot context measurably helps Thai by $\sim$0.024 CometKiwi points ($\sim$5\% of the direct score). Symmetric gloss agreement (mean of forward+backward sense coverage between conditions) is 61.3\% (vi) and 40.8\% (th), ruling out the delta being noise between near-identical outputs. Two caveats: (i)~CometKiwi is English-heavy in training so absolute low-resource scores carry uncertainty, though within-language contrast largely cancels this bias; and (ii)~this is pivot-as-context (source retained, gloss added), not the classical A$\to$MT(en)$\to$MT(B) cascade to which prior negative pivot-MT results apply.
 
 \paragraph{Per-language error taxonomy.} A full-corpus analysis (Table~\ref{tab:error-taxonomy}, Appendix~\ref{sec:error-taxonomy}) quantifies mono-gloss rate (55\% en $\rightarrow$ 74.6\% id/tl), CJK-character rate ($\sim$1\% non-CJK targets, 87\% ja, 2.7\% ko), and Chinese-headword echo (13\% for ja).
 
@@ -501,74 +478,45 @@ sv & 0.540 & th & 0.521 \\
 
 \subsection{Source Priority and Coverage}
 
-For headwords with definitions from multiple sources, we apply a priority hierarchy: community dictionaries (CC-CEDICT, HanDeDict, CFDICT, CC-CIDICT, CHEDICC, JMdict) > Wiktextract > MiniMax. Human-curated definitions take precedence.
-
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lr}
-\toprule
-\textbf{Metric} & \textbf{Value} \\
-\midrule
-Headwords & 428,073 \\
-Languages & 18 \\
-Language slots (headword $\times$ language) & 7,705,314 \\
-Slots with LLM-generated gloss & 7,697,901 \\
-Slots covered by community dict & 738,777 \\
-Dialect forms (Cantonese + Hokkien) & 511,514 \\
-Total cost (LLM inference, list price) & {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 \\
-\bottomrule
-\end{tabular}
-\caption{Final dictionary statistics.}
-\label{tab:coverage}
-\end{table}
-
-Table~\ref{tab:coverage} summarizes the final resource. Every one of the 428,073 headwords has definitions in all 18 languages---7.71M total slots, 100\% coverage.
-
-
-%% ============================================================
-\section{Downstream Application}
-\label{sec:downstream}
-
-To validate the dictionary's practical utility, we built a language pack generator that produces consolidated SQLite databases for two Chinese learning applications. The consolidated architecture replaces per-language database files with a single database containing one column per language, enabling column-scoped FTS4 search (e.g., \texttt{MATCH 'es:banco'}). Databases are encrypted for distribution. The dictionary is currently deployed in production for English and Spanish, with all 18 languages shipping in the next release.
+For headwords with definitions from multiple sources, we apply a priority hierarchy: community dictionaries (CC-CEDICT, HanDeDict, CFDICT, CC-CIDICT, CHEDICC, JMdict) $>$ Wiktextract $>$ MiniMax; human-curated definitions take precedence. Every one of the 428,073 headwords has definitions in all 18 target languages---7{,}705{,}314 slots total, 100\% coverage; 7{,}697{,}901 slots carry an LLM-generated gloss and 738{,}777 additionally carry a community-dictionary gloss. The dictionary is further augmented with 511{,}514 Cantonese and Hokkien dialect forms. Total LLM inference cost: {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 at published pay-as-you-go rates.
 
 
 %% ============================================================
 \section*{Limitations}
 \label{sec:limitations}
 
-\textbf{Glosses, not definitions.} The resource produces translation equivalents, not full lexicographic definitions with usage notes or grammatical patterns. Entries lack sense discrimination: polysemous words produce flat gloss lists. Inflecting languages lack grammatical metadata (German noun gender, Russian aspect pairs).
+\textbf{Glosses, not definitions.} The resource produces translation equivalents, not lexicographic definitions with usage notes or grammatical patterns; polysemous entries carry flat gloss lists (no sense discrimination), and inflecting languages lack grammatical metadata (German gender, Russian aspect).
 
-\textbf{Evaluation limitations.} Sense coverage is an automated lexical overlap proxy, not a human judgment, and partially circular for languages where the community gloss appears in the prompt context (\S\ref{sec:community}). The model-based metrics we report---BERTScore \citep{zhang2020bertscore}, COMET-DA \citep{rei2022comet}, and reference-free CometKiwi \citep{rei2022cometkiwi}---mitigate the surface-form limitation of lexical overlap but inherit the biases of their underlying multilingual encoders, and CometKiwi scores are less well-calibrated for low-resource target languages. LLM-as-judge scores (\S\ref{sec:backtrans}) may share biases with the evaluated model. Human evaluation across all 18 languages remains future work.
+\textbf{Evaluation limitations.} Sense coverage is an automated lexical-overlap proxy, and partially circular for languages where the community gloss appears in prompt context (\S\ref{sec:community}). The model-based metrics (BERTScore, COMET-DA, CometKiwi) mitigate lexical-overlap surface bias but inherit the biases of their multilingual encoders; CometKiwi is less well-calibrated for low-resource targets. LLM-as-judge scores (\S\ref{sec:backtrans}) may share biases with the evaluated model. Human evaluation across all 18 languages remains future work.
 
-\textbf{Pivot bias and single-model homogeneity.} All translations are mediated through English context, inheriting English sense boundaries. All 7.7M glosses originate from MiniMax~M2.5; model-specific biases propagate uniformly. Reproducibility is nevertheless supported by M2.5's open weights, which are hosted by multiple third-party providers (Fireworks, NVIDIA~NIM) and can be self-hosted.
+\textbf{Pivot bias and single-model homogeneity.} All translations are mediated through English context, inheriting English sense boundaries; all 7.7M glosses originate from MiniMax~M2.5, so model-specific biases propagate uniformly. Reproducibility is nevertheless supported by M2.5's open weights (hosted on Fireworks, NVIDIA~NIM; self-hostable).
 
-\textbf{Scope.} The 428K headwords are inherited from community dictionaries without curation. The 18 target languages cover major families but omit Malay, Bengali, and Swahili.
+\textbf{Scope.} The 428K headwords are inherited without curation; the 18 target languages cover major families but omit Malay, Bengali, and Swahili.
 
 
 %% ============================================================
 \section{Future Work}
 \label{sec:future}
 
-\textbf{From glossary to dictionary.} Sense-discriminated entries mapping each target-language gloss to a specific Chinese sense with usage guidance, combined with grammatical enrichment (German noun gender, Russian aspect pairs).
+\textbf{From glossary to dictionary.} Sense-discriminated entries with usage guidance and grammatical enrichment (gender, aspect, POS).
 
-\textbf{Computational loanword detection.} The dictionary contains both Hokkien source forms and Southeast Asian target languages---infrastructure for tracing lexical diffusion at scale. Linking Hokkien \textit{tāu-hū} to Indonesian \textit{tahu}, Tagalog \textit{taho}, and Thai \foreignlanguage{thai}{เต้าหู้} would produce a machine-readable atlas of Chinese vocabulary diffusion across maritime Southeast Asia \citep{chanyap1980}.
+\textbf{Computational loanword detection.} The dictionary's Hokkien source forms and Southeast Asian targets enable a machine-readable atlas of Chinese vocabulary diffusion---linking \textit{tāu-hū} to Indonesian \textit{tahu}, Tagalog \textit{taho}, and Thai \foreignlanguage{thai}{เต้าหู้}---across maritime Southeast Asia \citep{chanyap1980}.
 
-\textbf{Under-resourced languages.} The {\raise.17ex\hbox{$\scriptstyle\sim$}}\$146 cost makes the pipeline relevant for languages without institutional support for manual lexicography---Zhuang, Tibetan, Uyghur, and Yi within China alone lack comprehensive bilingual dictionaries. Applying our pipeline to such languages inherits the pivot-translation limitations catalogued by \citet{haddow2022lowresource}, particularly the risk that English intermediate representations restructure target-language sense boundaries; the ablation in \S\ref{sec:mt-baselines} shows this risk is language-dependent.
+\textbf{Under-resourced languages.} The $\sim$\$146 cost makes the pipeline relevant for languages without institutional lexicography support (Zhuang, Tibetan, Uyghur, Yi within China alone). Applying it inherits pivot-translation limitations \citep{haddow2022lowresource}; the ablation in \S\ref{sec:mt-baselines} shows this risk is language-dependent.
 
-\textbf{Community-in-the-loop evaluation.} Native-speaker evaluation across all 18 target languages---particularly by diaspora communities who are primary users of bilingual dictionaries---would establish gold-standard quality metrics. A realistic instrument would enrol 2 annotators for each of 3--5 languages on {\raise.17ex\hbox{$\scriptstyle\sim$}}100 stratified entries (accuracy, naturalness, completeness on 5-point scales). We defer this pending per-language recruitment funding; the model-based semantic metrics in \S\ref{sec:community}--\S\ref{sec:mt-baselines} are the strongest automated proxy currently available.
+\textbf{Community-in-the-loop evaluation.} Native-speaker evaluation across all 18 targets---particularly by diaspora communities---would establish gold-standard metrics. A realistic instrument (2 annotators, 3--5 languages, $\sim$100 stratified entries; accuracy/naturalness/completeness on 5-point scales) is deferred pending recruitment funding; the model-based metrics in \S\ref{sec:community}--\S\ref{sec:mt-baselines} are the strongest automated proxy.
 
 
 %% ============================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-A single open-weight LLM (MiniMax M2.5) can produce a multilingual Chinese glossary of 428,073 headwords $\times$ 18 languages for \${\raise.17ex\hbox{$\scriptstyle\sim$}}146. Enablers: batched cross-language prompting, language-specific rules that reduce script contamination to $\sim$0.83\%, a deterministic script-validator gate, and context-aware backfill (100\% coverage). Combined with 511K Cantonese/Hokkien dialect forms, this is the first open multilingual Chinese lexical resource covering the major languages of Europe, East Asia, Southeast Asia, and the Middle East.
+A single open-weight LLM (MiniMax M2.5) can produce a multilingual Chinese glossary of 428,073 headwords $\times$ 18 languages for \${\raise.17ex\hbox{$\scriptstyle\sim$}}146. Enablers: batched cross-language prompting, language-specific rules that reduce script contamination to $\sim$0.83\%, a deterministic script-validator gate, and context-aware backfill (100\% coverage). Combined with 511K Cantonese/Hokkien dialect forms, this is the first open multilingual Chinese lexical resource covering the major languages of Europe, East Asia, Southeast Asia, and the Middle East. The dictionary is deployed in production in a Chinese learning application.
 
 %% ============================================================
 \section*{Data and Code Availability}
 \label{sec:availability}
-The full \textit{Dictionarium Sinicum} SQLite database (2\,GB, 428{,}073 headwords $\times$ 18 languages, SHA-256 \texttt{e647e163\ldots8ea512}) is archived at Zenodo: \url{[ZENODO_DOI]}. All pipeline code, evaluation scripts, and reproducibility artifacts (Apache-2.0) are mirrored anonymously at \url{[ANON_MIRROR_URL]} for the review period; the production repository URL will be provided in the camera-ready.
+The full \textit{Dictionarium Sinicum} SQLite database (2\,GB, 428{,}073 headwords $\times$ 18 languages, SHA-256 \texttt{e647e163\ldots8ea512}) is archived at Harvard Dataverse under CC BY-SA 4.0: \url{https://doi.org/10.7910/DVN/HJWMKI}. For the anonymous review period, an anonymized preview URL (stripping author metadata) is available at \url{https://dataverse.harvard.edu/previewurl.xhtml?token=a53578a1-5c98-483e-9a86-49b653d8c5a3}. All pipeline code, evaluation scripts, and reproducibility artifacts (Apache-2.0) are mirrored anonymously at \url{https://anonymous.4open.science/r/arr26paperbmirror/} for the review period; the production repository URL will be provided in the camera-ready.
 
 
 %% ============================================================
@@ -729,6 +677,36 @@ ja: とうふ        <- Sino-Japanese
 This entry illustrates how the Hokkien maritime trade vocabulary seeded cognates across Southeast Asian languages: \textit{tāu-hū} (Hokkien) → \textit{tahu} (Indonesian/Malay), \textit{taho/tokwa} (Tagalog), \textit{đậu phụ} (Vietnamese, Sino-Vietnamese route).
 
 %% ============================================================
+\section{Reference-Free Quality Estimates}
+\label{sec:appendix-cometkiwi}
+
+Table~\ref{tab:cometkiwi} reports per-language CometKiwi scores (\S\ref{sec:mt-baselines}) on the 200-headword stratified sample per language.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc|lc}
+\toprule
+\textbf{Lang} & \textbf{CK} & \textbf{Lang} & \textbf{CK} \\
+\midrule
+en$^{\dagger}$ & 0.614 & id$^{\dagger}$ & 0.543 \\
+de$^{\dagger}$ & 0.534 & ja & 0.546 \\
+fr$^{\dagger}$ & 0.555 & ko & 0.557 \\
+es & 0.558 & ru & 0.568 \\
+it & 0.570 & vi & 0.554 \\
+pt & 0.554 & tl & 0.471 \\
+nl & 0.540 & fa & 0.535 \\
+sv & 0.540 & th & 0.521 \\
+      &       & ar & 0.503 \\
+      &       & hi & 0.589 \\
+\midrule
+\multicolumn{4}{c}{\textbf{Macro: 0.547} (ref 0.562 / non-community 0.542)} \\
+\bottomrule
+\end{tabular}
+\caption{Reference-free CometKiwi scores (higher is better) on 200 stratified headwords per language (n=3{,}600 total). $\dagger$ = language with a community reference dictionary. Left column groups European targets; right column groups East Asian, Southeast Asian, and Middle Eastern targets.}
+\label{tab:cometkiwi}
+\end{table}
+
 \section{Per-Language Error Taxonomy}
 \label{sec:error-taxonomy}
 
@@ -765,5 +743,103 @@ it  & 68.8 & 1.37 & 22 & 1.02 & 0.52 \\
 \caption{Per-language error signals from the full 428,073-headword MiniMax output. Mono~\% = fraction of definitions with only one slash-separated gloss (sense-compression proxy). Mean~seg. = mean glosses per definition. Med.~len = median character length. CJK~\% = fraction containing any CJK character (script contamination for non-CJK targets; expected for ja/ko). Zh-echo~\% = fraction containing the Chinese headword string (metalinguistic reference, common in ja).}
 \label{tab:error-taxonomy}
 \end{table}
+
+%% ============================================================
+\section{Response to March 2026 Reviewers}
+\label{sec:response-letter}
+
+\textbf{Previous review round:} ARR March 2026, submission ID \texttt{sVPHR4PSzR}, reviewers \texttt{gKVr}, \texttt{SamJ}, \texttt{cky5}, meta-review \texttt{zfRe}.
+
+We are grateful to the March 2026 reviewers for their detailed feedback. This appendix maps every substantive objection from the previous round to the specific manuscript changes that address it, and preempts likely questions from this round by anticipating them below.
+
+\subsection{Changes since ARR March 2026}
+\label{sec:response-changes}
+
+\paragraph{SamJ: ``Consider including COMET or BERTScore alongside lexical overlap to better support claims and capture semantic accuracy.''}
+
+\textbf{Addressed.} \S\ref{sec:community} (Table~\ref{tab:comparison}) now reports BERTScore~F1 and COMET-DA alongside sense-coverage and false-sense rate on the four community reference languages (en, de, fr, id; macro F1 0.924, COMET-DA 0.774). \S\ref{sec:mt-baselines} (Table~\ref{tab:cometkiwi}) reports reference-free CometKiwi across all 18 target languages with the Chinese headword as the anchor (macro 0.547; ref langs 0.562, non-community 0.542). \S\ref{sec:mt-baselines} (Table~\ref{tab:mt-baseline-semantic}) reports the same three model-based metrics for four API-accessible MT baselines (Claude Sonnet~4.5, GPT-4o-mini, Google Translate, DeepL); the pipeline leads on all three metrics.
+
+\paragraph{SamJ: ``For the backfill phase, did the authors consider a second-model verification approach?''}
+
+\textbf{Addressed.} \S\ref{sec:mt-baselines} ``Second-model verification'' paragraph reports an independent Gemma-4-31B (open-weight, Cerebras) rating of MiniMax outputs across all 14 non-community-reference languages, 200 stratified headwords each (n=2{,}800 total). Macro mean rating 4.47/5; only 9.6\% of glosses are flagged as low-quality (rating $<$3). The two lowest per-language means (Tagalog 4.14, Thai 4.35) coincide with the lowest CometKiwi scores (0.471, 0.521)---two independent open-weight quality-estimation methods agree on which languages need the most improvement.
+
+\paragraph{SamJ: PDF hyphenation typos.}
+
+\textbf{Addressed.} The hyphenation glitches were fixed in a dedicated Tier~1 pass: \texttt{microtype} factor~1050, explicit \texttt{\textbackslash lefthyphenmin=3 \textbackslash righthyphenmin=3}, targeted \texttt{\textbackslash hyphenation\{\}} list of $\sim$50 words. Over 20 two-letter fragment splits in the March~2026 version are now zero.
+
+\paragraph{gKVr / cky5: ``Software: 1'' --- no public code.}
+
+\textbf{Addressed.} The pipeline and evaluation code are released at an anonymized mirror (see the Data and Code Availability section). The production repository is Apache-2.0 licensed and includes: the full three-phase translation pipeline, all six eval scripts (community comparison, MT baselines, semantic metrics, pivot ablation, error taxonomy, second-model verification), the dictmaster SQLite schema and importers, and 189~passing unit tests.
+
+\paragraph{gKVr: ``Single proprietary model.''}
+
+\textbf{Addressed as a paper-clarity issue.} MiniMax M2.5 is open-weight; it is hosted on multiple third-party inference providers (Fireworks, NVIDIA NIM) and can be self-hosted. The Abstract, \S\ref{sec:intro}, \S\ref{sec:pipeline}, the Limitations section, and \S\ref{sec:future} now explicitly call this out. Additionally, \S\ref{sec:mt-baselines} (English-gloss-context ablation) uses Llama-3.3-70B (open-weight, Meta) to demonstrate the pipeline pattern works with a second open-weight model family.
+
+\paragraph{gKVr: ``Limited eval scope on the 12 non-community-reference languages.''}
+
+\textbf{Addressed by two independent evaluations covering all 18 languages} (not just the reference-language subset): (a) reference-free CometKiwi with Chinese as source (\S\ref{sec:mt-baselines} Table~\ref{tab:cometkiwi}) shows the non-community-language macro (0.542) is only 0.02 below the reference-language macro (0.562); (b) second-model verification (\S\ref{sec:mt-baselines}, 14 non-community-ref languages including Spanish and Japanese) gives macro 4.47/5 with all 14 languages above 4.0.
+
+\paragraph{gKVr: ``Anglocentric bias / pivot criticism.''}
+
+\textbf{Addressed by explicit pivot-vs-direct ablation} (\S\ref{sec:mt-baselines} English-gloss-context ablation paragraph). Vietnamese and Thai, same open-weight model (Llama-3.3-70B), with vs.\ without CC-CEDICT English gloss as prompt context. At properly powered sample sizes (n=324 per language) with percentile-bootstrap 95\% CIs, the direct-minus-pivot CometKiwi delta is $-0.006$ for Vietnamese (CI $[-0.020, +0.009]$) and $-0.024$ for Thai (CI $[-0.039, -0.010]$). The Vietnamese interval straddles zero (no detectable effect); the Thai interval is entirely negative, indicating pivot context measurably helps for Thai. Symmetric gloss agreement is 61.3\%~(vi) and 40.8\%~(th), ruling out the delta being noise between near-identical outputs. Finding: pivot effect is language-dependent, not a uniform quality loss.
+
+\paragraph{AC: ``Error analysis / hallucination analysis / per-language breakdown.''}
+
+\textbf{Addressed.} \S\ref{sec:mt-baselines} ``Per-language error taxonomy'' paragraph points to Appendix~\ref{sec:error-taxonomy}, which reports full-corpus automated per-language error signals (mono-gloss rate, mean segments, median length, CJK-character inclusion, Chinese-headword echo) for all 18 languages. Notable patterns: mono-gloss rate ranges 55\% (English) to 74.6\% (Indonesian/Tagalog); CJK inclusion is $\sim$1\% for non-CJK targets except Japanese (87\%, legitimate kanji) and Korean (2.7\%, low-level hanja mixing).
+
+\paragraph{cky5: Human evaluation.}
+
+\textbf{Framed as future work pending funding} (\S\ref{sec:future}). A realistic native-speaker instrument (2 annotators, 3--5 languages, $\sim$100 stratified entries, 5-point accuracy/naturalness/completeness scales) would raise soundness scores substantially. The model-based metrics in \S\ref{sec:community}--\S\ref{sec:mt-baselines} are the strongest automated proxy currently available; we prioritized deploying them for this revision rather than the more expensive human study.
+
+\subsection{Anticipated questions this round}
+\label{sec:response-anticipated}
+
+We ran an unofficial pre-review round with three independent large language models (Claude Fable~5, xAI Grok, Google Gemini) prior to submission. Their strongest recurring critiques and our responses:
+
+\paragraph{Q1: Isn't the +12--22pp sense-coverage lead over MT baselines confounded because the pipeline sees community glosses in prompt context but the baselines don't?}
+
+Yes, and the manuscript acknowledges this. The Abstract, \S\ref{sec:community} caveat paragraph, and the framing around Tables~\ref{tab:mt-baseline}/\ref{tab:mt-baseline-semantic} have been softened for this revision: the +12--22pp gap is now explicitly attributed partly to the pipeline's access to community-reference glosses in its input context, not to independent generation capability alone. The paper distinguishes two claims:
+
+\begin{itemize}
+\item The community-reference languages (en/de/fr/id) show \textbf{context utilization}: how faithfully does the model preserve reference senses when given them? (Not a fair test of independent quality.)
+\item The 14 non-community-reference languages show \textbf{pivot translation quality} under a genuine open-ended MT setting; these are scored with reference-free CometKiwi and independent Gemma-4-31B verification.
+\end{itemize}
+
+The +12--22pp headline claim was retained because the \emph{same model} (MiniMax M2.5) with a generic zero-context prompt scores 14 points lower than our pipeline on the same 275-pair evaluation, isolating a real prompt-engineering effect.
+
+\paragraph{Q2: The pivot ablation uses only $\sim$33 pairs per language after CC-CEDICT filtering. Isn't that statistically underpowered?}
+
+\textbf{We agree, and rerunning changes the finding.} The original n=33 suggested pivot helped Vietnamese by $+0.067$ CometKiwi and was neutral for Thai. Rerun at n=324 (vi) and n=324 (th) with percentile-bootstrap 95\% CIs shows the delta shrinks by an order of magnitude AND the Vietnamese CI straddles zero: Vietnamese direct-minus-pivot $\Delta = -0.006$ (CI $[-0.020, +0.009]$), Thai $\Delta = -0.024$ (CI $[-0.039, -0.010]$). The earlier ``pivot helps Vietnamese'' finding was noise, not signal. The revised \S\ref{sec:mt-baselines} paragraph reports the honest finding: at properly powered sample sizes, English pivot has no statistically detectable effect for Vietnamese and a small measurable positive effect for Thai. Notably, the gloss agreement is only 61\%~(vi) / 41\%~(th), meaning pivot and direct produce lexically different translations of comparable reference-free quality --- the model uses the pivot context but the target-language sense boundaries land in similar semantic space either way.
+
+\paragraph{Q3: What is the sense-coverage performance on a held-out set of headwords whose community glosses were NEVER supplied in the prompt?}
+
+This is a fair follow-up. We defer a true held-out evaluation to a future revision because the production pipeline unconditionally supplies community glosses for all reference-language slots (this is design intent --- context utilization is the point). A retrospective held-out slice would require rerunning the pipeline on a masked subset and would fully replicate the $\sim$\$146 cost per run. We commit to running one such slice for the camera-ready if the paper is accepted.
+
+\paragraph{Q4: Why MiniMax M2.5 over other open-weight models that also passed the 5-headword smoke test (Kimi K2, Nemotron)?}
+
+Table~\ref{tab:models} documents the selection criteria: format compliance, script contamination, throughput, and cost. MiniMax M2.5 was the only model that produced zero issues on the 5-headword suite across all four criteria. Kimi K2 and Nemotron both passed format compliance but had non-zero contamination rates on the smoke test. The paper adds an explicit note that a full-scale rerun with a different generator (e.g., Qwen3-235B or Llama-3.3-70B) is future work; the Llama-3.3-70B pivot ablation and the Gemma-4-31B verification pass demonstrate that the pipeline pattern generalizes across open-weight model families.
+
+\paragraph{Q5: Are there residual data-integrity issues after the three backfill passes?}
+
+No. A post-cleanup audit (\S\ref{sec:quality}) shows every headword $\times$ language slot is filled, and the deterministic script validator has an audit tab in the released code. The paper's earlier claim of ``90.6\% single-character coverage'' was a snapshot from an intermediate run; subsequent backfill iterations with alternative prompting for metalinguistic definitions closed those gaps. The current DB (released at Harvard Dataverse, doi:10.7910/DVN/HJWMKI) shows 100.0\% coverage across all 7{,}709{,}256 slots.
+
+\paragraph{Q6: Missing prior art?}
+
+Gemini flagged three references worth adding for context and completeness: Bond \& Paik (2012) on wordnet licensing, Haddow et al.\ (2022) on low-resource MT, and Wang et al.\ (2023) on document-level MT with LLMs. All three are now cited (\S\ref{sec:related}, \S\ref{sec:future}).
+
+\subsection{Known remaining limitations}
+\label{sec:response-limitations}
+
+Documented in the Limitations section. Highest-priority items for future work: (a) native-speaker human evaluation on 3--5 non-community-ref languages (deferred pending recruitment funding); (b) full-pipeline rerun with an alternative open-weight generator (deferred pending $\sim$\$150 compute budget); (c) sense discrimination and grammatical enrichment (multi-year research program).
+
+\subsection{Reproducibility}
+\label{sec:response-reproducibility}
+
+\begin{itemize}
+\item Anonymized code mirror at \texttt{anonymous.4open.science} (link in \S\ref{sec:availability}).
+\item Full 2\,GB SQLite database archived at Harvard Dataverse under CC~BY-SA~4.0 (\texttt{doi:10.7910/DVN/HJWMKI}; see \S\ref{sec:availability}).
+\item 189/189 unit tests pass on the released repository.
+\item All eval scripts accept \texttt{--seed} for reproducible sampling; every reported metric can be re-derived by running the corresponding script on the released database.
+\end{itemize}
 
 \end{document}
