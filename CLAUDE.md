@@ -118,6 +118,24 @@ Extension: `lib/libsimple-linux-ubuntu-latest/libsimple.so` — loaded in `get_c
 - SAFE to use: CC-CEDICT (CC BY-SA 4.0), jieba (MIT), CFDICT (CC BY-SA 3.0), HanDeDict (CC BY-SA 2.0), HSK (public)
 - DO NOT use CJKI dictionaries (IT/Medical/Civil) from nomad-builder — commercially licensed, likely has canary entries
 
+## MCP argument validation (vendored mcpkit)
+
+Unknown tool arguments are **refused**, not silently dropped. The zhcorpus MCP server vendors the
+shared `mcpkit` guard as one hash-verified file (`src/zhcorpus/mcp/_mcpkit.py`, mcpkit 0.2.1):
+`StrictArgsMCP` rejects any argument a tool does not declare and stamps `additionalProperties:
+false` on the advertised schema. Regenerate / verify:
+
+```bash
+python -m mcpkit.vendor --out src/zhcorpus/mcp/_mcpkit.py    # regenerate from upstream
+python -m mcpkit.vendor --check src/zhcorpus/mcp/_mcpkit.py   # verify unmodified + current
+```
+
+**For AI agents:** a tool call that returns `unknown argument(s): … running older code than you
+think … reconnect` does **not** mean your arguments are wrong in general — *this running server
+process* does not implement them (a long-lived daemon serves the code it launched with). Nothing
+ran. Check the server's reported revision and reconnect the MCP; do not retry against the same
+process.
+
 ## Srclight Code Index (MCP)
 
 Call `codebase_map()` at the START of every session before any other work.
