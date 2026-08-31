@@ -2,7 +2,7 @@
 
 Exposes 104M-chunk Chinese corpus, 428K-headword dictionary, and 184K
 dialect forms via MCP tools. Follows the srclight/model-radar pattern:
-module-level FastMCP instance, lazy DB connections, configure() + run_server().
+module-level MCPServer instance, lazy DB connections, configure() + run_server().
 """
 
 import asyncio
@@ -12,15 +12,13 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # Shared estate policy, vendored as a single generated file (mcpkit). Refuses unknown tool
 # arguments instead of silently discarding them, and advertises additionalProperties:false so
 # the catalog matches the runtime. Regenerate with:
-#   python -m mcpkit.vendor --out src/zhcorpus/mcp/_mcpkit.py
 # Verify it has not been hand-edited with:
-#   python -m mcpkit.vendor --check src/zhcorpus/mcp/_mcpkit.py
-from ._mcpkit import StrictArgsMCP
+from ironmcp import strict_server
 
 # ---------------------------------------------------------------------------
 # Lazy imports — these touch zhcorpus internals only when actually called
@@ -75,7 +73,7 @@ Wiktextract (multi), JMdict (ja), MiniMax translations (ar, es, fa, hi, ko, pt, 
 - All data stays local. The server binds to localhost only.
 """
 
-mcp = StrictArgsMCP("zhcorpus", instructions=_INSTRUCTIONS)
+mcp = strict_server(name="zhcorpus", instructions=_INSTRUCTIONS, reconnect_hint="check server_stats and reconnect the zhcorpus MCP")
 
 # ---------------------------------------------------------------------------
 # Global state — configured lazily
@@ -532,7 +530,7 @@ def _query_dialect_forms(dict_conn: sqlite3.Connection, term: str) -> list[dict]
 # Server lifecycle
 # ---------------------------------------------------------------------------
 
-def create_server() -> FastMCP:
+def create_server() -> MCPServer:
     """Return the MCP server instance."""
     global _server_start_time
     if _server_start_time is None:
@@ -547,7 +545,7 @@ def make_sse_and_streamable_http_app(mount_path: str | None = "/"):
     Serving both on the same port avoids connection failures.
     """
     streamable_app = mcp.streamable_http_app()
-    sse_app = mcp.sse_app(mount_path=mount_path)
+    sse_app = mcp.sse_app()
     sse_routes = [
         r for r in sse_app.routes
         if getattr(r, "path", None) in ("/sse", "/messages")
@@ -562,9 +560,9 @@ def run_server(transport: str = "stdio", port: int = 8743) -> None:
     if _server_start_time is None:
         _server_start_time = time.time()
     if transport in ("sse", "streamable-http"):
-        mcp.settings.host = "127.0.0.1"
-        mcp.settings.port = port
-    mcp.run(transport=transport)
+        mcp.run(transport=transport, host="127.0.0.1", port=port)
+    else:
+        mcp.run(transport=transport)
 
 
 def main() -> None:
