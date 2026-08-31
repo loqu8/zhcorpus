@@ -141,3 +141,21 @@ Zero-cost mitigation plan instead:
    with items 1–2 above rather than silence. Reviewers punish evasion more than honest scope.
 5. Venue posture unchanged: Findings-track + LREV are resource-paper-friendly; a
    dictionary resource with airtight automatic eval + jury agreement is committable there.
+
+### CORRECTION (2026-08-31, same day): mitigations 1–2 above were ALREADY DONE in the manuscript
+
+Checked the .tex rather than memory — both zero-cost mitigations are already implemented, better
+than sketched:
+- **LLM jury WITH agreement: in.** §Results: FOUR judges (Claude Sonnet 4, Kimi K2, GPT-OSS-120B,
+  DeepSeek V3.1) over 100 entries — accuracy 4.34/5, naturalness 4.31/5, completeness 3.38/5,
+  mean pairwise disagreement 0.64. (tex ~line 469)
+- **Tier 8 second-model backfill verification: in.** Gemma-4-31B via Cerebras, n=2,800 across 14
+  languages, macro 4.47/5, 9.6% flagged <3; cross-validated against CometKiwi (lowest langs agree).
+  Response letter §1.2 answers SamJ directly. (tex ~line 477)
+- Also already in: properly-powered pivot ablation (n=324/lang, bootstrap CIs, honest retraction
+  of the n=33 finding), COMET+BERTScore columns, open-weight Llama-3.3-70B comparison,
+  multi-model radar comparison (tools/eval_multi_model.py).
+
+REMAINING before the window opens (~late Sept): nothing blocking. Optional only: (a) unpaid
+volunteer spot-check if one materializes; (b) final read of Limitations wording to confirm it
+scopes the no-paid-human-eval choice explicitly. The paper is submit-ready on the eval front.
