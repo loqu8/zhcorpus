@@ -82,3 +82,80 @@ submission). Start with Tier 1 item #1 (publish code repo).
 The paper source is `docs/Projects/paper-b-llm-translation/dictionarium_sinicum.tex`.
 The Markdown draft is `docs/Projects/paper-b-llm-translation/draft.md`.
 Existing eval scripts are in `docs/Projects/paper-b-llm-translation/supplementary/`.
+
+---
+
+## Status + ARR timing (added 2026-08-31)
+
+**Status:** writing complete. All reviewer requests addressed EXCEPT Tier 7 (native-speaker human
+evaluation) — the remaining gap is exactly the AC's direct ask, echoed by all three reviewers
+(gKVr "restricted to LLM judges", SamJ "small-scale human eval", cky5 "human evaluation of
+definitions") and the meta-review.
+
+**ARR October 2026 timing (verified 2026-08-31 vs aclrollingreview.org/dates):**
+- Submission deadline: **October 12, 2026** → NAACL 2027 / COLING 2027, commitment Dec 20.
+- The October form is NOT yet open (cycle details TBA). ARR's standard pattern opens the
+  OpenReview form ~2 weeks before deadline → expect **~late September**; effectively the window
+  is the first ~2 weeks of October.
+- Submit as an ARR **revision linked to forum sVPHR4PSzR** (resubmission with response letter),
+  not a fresh submission.
+- **Fallback on the table:** existing completed reviews can be committed directly to
+  **EACL 2027 (commitment deadline Oct 11)** with no new review cycle — only worth it if the
+  revision slips; the revised paper is stronger than the reviewed one.
+
+**Recommendation (2026-08-31): run Tier 7 NOW, in the 6-week window.**
+1. Wall-clock fits: 2–3 weeks recruitment/annotation vs 6 weeks of runway — but only if
+   recruitment starts THIS WEEK (Prolific/Upwork posting is the long pole, ~4 days of our effort).
+2. Skipping the one thing every reviewer + the AC asked for, on a resubmission likely seen by
+   overlapping reviewers, is the classic way a revision gets dinged a second time. The rest of
+   the revision is strong; this is the credibility anchor.
+3. Scope to the plan's minimum: 3 languages (de, id, fa/hi) × 100 entries × 2 annotators,
+   accuracy/naturalness/completeness 1–5, report IAA. Budget $500–$1,500.
+4. Degrade gracefully: if only 2 languages complete by Oct 12, ship those + state the third in
+   Limitations ("in progress; full set in the LREV version"). Partial human eval with IAA still
+   converts every "no human eval" objection into a scoping quibble.
+5. LREV parallel (~2 weeks after the ARR push) gets the completed full set either way.
+
+---
+
+## DECISION (Tim, 2026-08-31): Tier 7 human evaluation is CUT — no paid annotation
+
+Ruled out on budget ($500–$1,500 not happening). The recommendation above is superseded.
+Zero-cost mitigation plan instead:
+
+1. **LLM-jury with agreement stats (~$0, 2–3 days).** Replace the single LLM judge with a
+   3–5 model panel on the SAME 100-entry sets (free/subscription models via model-radar —
+   e.g., one Qwen, one Llama, one Gemini/Claude leg), report inter-judge agreement the way
+   human IAA would be reported, plus disagreement analysis. Directly blunts gKVr's
+   "LLM-judge bias/reliability" — bias is the objection, and a jury with measured agreement
+   is the standard no-human answer to it.
+2. **Tier 8 second-model backfill verification (~$0, ~3 days)** — SamJ's own suggested
+   alternative; run the 12 no-reference-language backfill through a second model, report
+   divergence. Do it; it was optional only because Tier 7 existed.
+3. **Volunteer micro-eval IF free (0 days our effort):** if any native speakers in the
+   Loqu8/community orbit will score 25–50 entries in 1–2 languages unpaid, include it as a
+   "small-scale human spot-check" (SamJ asked for exactly "small-scale... at least one
+   language"). If nobody volunteers, skip — do not pay.
+4. **Own the gap in writing:** Limitations states plainly that evaluation is automatic +
+   LLM-jury, scoped by resource constraints; the response letter answers the human-eval asks
+   with items 1–2 above rather than silence. Reviewers punish evasion more than honest scope.
+5. Venue posture unchanged: Findings-track + LREV are resource-paper-friendly; a
+   dictionary resource with airtight automatic eval + jury agreement is committable there.
+
+### CORRECTION (2026-08-31, same day): mitigations 1–2 above were ALREADY DONE in the manuscript
+
+Checked the .tex rather than memory — both zero-cost mitigations are already implemented, better
+than sketched:
+- **LLM jury WITH agreement: in.** §Results: FOUR judges (Claude Sonnet 4, Kimi K2, GPT-OSS-120B,
+  DeepSeek V3.1) over 100 entries — accuracy 4.34/5, naturalness 4.31/5, completeness 3.38/5,
+  mean pairwise disagreement 0.64. (tex ~line 469)
+- **Tier 8 second-model backfill verification: in.** Gemma-4-31B via Cerebras, n=2,800 across 14
+  languages, macro 4.47/5, 9.6% flagged <3; cross-validated against CometKiwi (lowest langs agree).
+  Response letter §1.2 answers SamJ directly. (tex ~line 477)
+- Also already in: properly-powered pivot ablation (n=324/lang, bootstrap CIs, honest retraction
+  of the n=33 finding), COMET+BERTScore columns, open-weight Llama-3.3-70B comparison,
+  multi-model radar comparison (tools/eval_multi_model.py).
+
+REMAINING before the window opens (~late Sept): nothing blocking. Optional only: (a) unpaid
+volunteer spot-check if one materializes; (b) final read of Limitations wording to confirm it
+scopes the no-paid-human-eval choice explicitly. The paper is submit-ready on the eval front.
