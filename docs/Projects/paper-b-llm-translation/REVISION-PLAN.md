@@ -82,3 +82,36 @@ submission). Start with Tier 1 item #1 (publish code repo).
 The paper source is `docs/Projects/paper-b-llm-translation/dictionarium_sinicum.tex`.
 The Markdown draft is `docs/Projects/paper-b-llm-translation/draft.md`.
 Existing eval scripts are in `docs/Projects/paper-b-llm-translation/supplementary/`.
+
+---
+
+## Status + ARR timing (added 2026-08-31)
+
+**Status:** writing complete. All reviewer requests addressed EXCEPT Tier 7 (native-speaker human
+evaluation) — the remaining gap is exactly the AC's direct ask, echoed by all three reviewers
+(gKVr "restricted to LLM judges", SamJ "small-scale human eval", cky5 "human evaluation of
+definitions") and the meta-review.
+
+**ARR October 2026 timing (verified 2026-08-31 vs aclrollingreview.org/dates):**
+- Submission deadline: **October 12, 2026** → NAACL 2027 / COLING 2027, commitment Dec 20.
+- The October form is NOT yet open (cycle details TBA). ARR's standard pattern opens the
+  OpenReview form ~2 weeks before deadline → expect **~late September**; effectively the window
+  is the first ~2 weeks of October.
+- Submit as an ARR **revision linked to forum sVPHR4PSzR** (resubmission with response letter),
+  not a fresh submission.
+- **Fallback on the table:** existing completed reviews can be committed directly to
+  **EACL 2027 (commitment deadline Oct 11)** with no new review cycle — only worth it if the
+  revision slips; the revised paper is stronger than the reviewed one.
+
+**Recommendation (2026-08-31): run Tier 7 NOW, in the 6-week window.**
+1. Wall-clock fits: 2–3 weeks recruitment/annotation vs 6 weeks of runway — but only if
+   recruitment starts THIS WEEK (Prolific/Upwork posting is the long pole, ~4 days of our effort).
+2. Skipping the one thing every reviewer + the AC asked for, on a resubmission likely seen by
+   overlapping reviewers, is the classic way a revision gets dinged a second time. The rest of
+   the revision is strong; this is the credibility anchor.
+3. Scope to the plan's minimum: 3 languages (de, id, fa/hi) × 100 entries × 2 annotators,
+   accuracy/naturalness/completeness 1–5, report IAA. Budget $500–$1,500.
+4. Degrade gracefully: if only 2 languages complete by Oct 12, ship those + state the third in
+   Limitations ("in progress; full set in the LREV version"). Partial human eval with IAA still
+   converts every "no human eval" objection into a scoping quibble.
+5. LREV parallel (~2 weeks after the ARR push) gets the completed full set either way.
